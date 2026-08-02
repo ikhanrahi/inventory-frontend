@@ -47,8 +47,32 @@
     </div>
 
     <script>
-        function addProduct() {
-            // Retrieve values from input fields
+        const API_URL = 'http://localhost:5000/api/products';
+
+        // ১. ব্যাকএন্ড থেকে প্রোডাক্টের তালিকা নিয়ে আসার ফাংশন
+        async function fetchProducts() {
+            try {
+                const response = await fetch(API_URL);
+                const products = await response.json();
+
+                const table = document.getElementById('inventoryTable');
+                table.innerHTML = '';
+
+                products.forEach(product => {
+                    const newRow = table.insertRow();
+                    newRow.innerHTML = `
+                        <td>${product.name}</td>
+                        <td>${product.quantity}</td>
+                        <td>${product.price}</td>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        }
+
+        // ২. ব্যাকএন্ডে নতুন প্রোডাক্ট পাঠানোর ফাংশন
+        async function addProduct() {
             const name = document.getElementById('productName').value;
             const quantity = document.getElementById('productQuantity').value;
             const price = document.getElementById('productPrice').value;
@@ -58,21 +82,25 @@
                 return;
             }
 
-            // Insert a new row into the table
-            const table = document.getElementById('inventoryTable');
-            const newRow = table.insertRow();
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, quantity, price })
+                });
 
-            newRow.innerHTML = `
-                <td>${name}</td>
-                <td>${quantity}</td>
-                <td>${price}</td>
-            `;
-
-            // Reset input fields
-            document.getElementById('productName').value = '';
-            document.getElementById('productQuantity').value = '';
-            document.getElementById('productPrice').value = '';
+                if (response.ok) {
+                    document.getElementById('productName').value = '';
+                    document.getElementById('productQuantity').value = '';
+                    document.getElementById('productPrice').value = '';
+                    fetchProducts();
+                }
+            } catch (error) {
+                console.error('Error adding product:', error);
+            }
         }
+
+        fetchProducts();
     </script>
 </body>
 </html>
