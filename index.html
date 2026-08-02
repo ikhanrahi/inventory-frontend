@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
+        h1 { color: #333; }
+        .form-container, .table-container { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #007bff; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1>📦 Inventory Management</h1>
+
+    <!-- Form to add a new product -->
+    <div class="form-container">
+        <h3>Add New Product</h3>
+        <input type="text" id="productName" placeholder="Product Name (e.g., Laptop)">
+        <input type="number" id="productQuantity" placeholder="Quantity (e.g., 10)">
+        <input type="number" id="productPrice" placeholder="Price (e.g., 500)">
+        <button onclick="addProduct()">Add Product</button>
+    </div>
+
+    <!-- Table to display inventory -->
+    <div class="table-container">
+        <h3>Current Inventory List</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Quantity</th>
+                    <th>Price ($)</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryTable">
+                <!-- Products will be dynamically added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function addProduct() {
+            // Retrieve values from input fields
+            const name = document.getElementById('productName').value;
+            const quantity = document.getElementById('productQuantity').value;
+            const price = document.getElementById('productPrice').value;
+
+            if (!name || !quantity || !price) {
+                alert('Please fill in all fields!');
+                return;
+            }
+
+            // Insert a new row into the table
+            const table = document.getElementById('inventoryTable');
+            const newRow = table.insertRow();
+
+            newRow.innerHTML = `
+                <td>${name}</td>
+                <td>${quantity}</td>
+                <td>${price}</td>
+            `;
+
+            // Reset input fields
+            document.getElementById('productName').value = '';
+            document.getElementById('productQuantity').value = '';
+            document.getElementById('productPrice').value = '';
+        }
+    </script>
+</body>
+</html>
