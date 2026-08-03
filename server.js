@@ -14,18 +14,26 @@ app.use(express.json());
 
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
-// 📧 NODEMAILER EMAIL TRANSPORTER CONFIGURATION
+// 📧 FIXED NODEMAILER TRANSPORTER (Port 465 SSL for Render Cloud)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // SSL Connection
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    }
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000
 });
 
 // Helper function to send low stock alert emails
 async function checkAndSendLowStockAlert(productId) {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.log("ℹ️ Email notification skipped: EMAIL_USER or EMAIL_PASS not configured.");
+        return;
+    }
 
     try {
         const res = await db.query('SELECT * FROM products WHERE id = $1', [productId]);
@@ -35,7 +43,7 @@ async function checkAndSendLowStockAlert(productId) {
         if (product.quantity <= 5) {
             const mailOptions = {
                 from: `"StockFlow ERP Alert" <${process.env.EMAIL_USER}>`,
-                to: process.env.EMAIL_USER, // Sends alert to Admin Email
+                to: process.env.EMAIL_USER,
                 subject: `⚠️ LOW STOCK ALERT: ${product.name} (${product.quantity} Pcs Left)`,
                 html: `
                     <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0f172a; color: #f8fafc; border-radius: 10px;">
@@ -53,7 +61,7 @@ async function checkAndSendLowStockAlert(productId) {
                 `
             };
             await transporter.sendMail(mailOptions);
-            console.log(`📧 Low stock email alert sent for: ${product.name}`);
+            console.log(`📧 Low stock email alert sent successfully for: ${product.name}`);
         }
     } catch (err) {
         console.error('Email Notification Error:', err.message);
@@ -296,7 +304,6 @@ app.put('/api/products/:id', async (req, res) => {
             ]
         );
 
-        // Trigger low stock check
         checkAndSendLowStockAlert(req.params.id);
 
         res.json({ message: 'Product updated successfully!', product: result.rows[0] });
@@ -316,7 +323,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 🛒 MULTI-ITEM POS CHECKOUT & SALES (WITH EMAIL ALERT)
+// 🛒 MULTI-ITEM POS CHECKOUT & SALES
 // -------------------------------------------------------------
 
 app.post('/api/pos/checkout', async (req, res) => {
@@ -352,7 +359,6 @@ app.post('/api/pos/checkout', async (req, res) => {
             await db.query('INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)', [saleId, item.product_id, item.quantity, prod.price]);
             await db.query('UPDATE products SET quantity = $1 WHERE id = $2', [newStock, item.product_id]);
 
-            // Trigger Email Alert for each item sold if stock becomes low
             checkAndSendLowStockAlert(item.product_id);
         }
 
@@ -384,7 +390,6 @@ app.post('/api/sales', async (req, res) => {
         await db.query('INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)', [saleRes.rows[0].id, product_id, quantity, product.price]);
         await db.query('UPDATE products SET quantity = $1 WHERE id = $2', [newStock, product_id]);
 
-        // Trigger Email Alert
         checkAndSendLowStockAlert(product_id);
 
         res.status(201).json({ message: 'Purchase completed successfully!', saleId: saleRes.rows[0].id });
