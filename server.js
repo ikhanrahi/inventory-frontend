@@ -11,6 +11,9 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
+// In-Memory/Database Admin Passcode fallback variable
+let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
+
 app.get('/', (req, res) => {
     res.send('🚀 Enterprise Inventory System API is Running!');
 });
@@ -30,8 +33,7 @@ app.post('/api/auth/register', async (req, res) => {
         const requestedRole = role ? role.toUpperCase() : 'CUSTOMER';
         
         if (requestedRole === 'ADMIN') {
-            const SECRET_ADMIN_PASS = process.env.ADMIN_SECRET || 'ADMIN123';
-            if (adminCode !== SECRET_ADMIN_PASS) {
+            if (adminCode !== currentAdminPasscode) {
                 return res.status(403).json({ message: 'Invalid Admin Secret Code!' });
             }
         }
@@ -86,6 +88,23 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // -------------------------------------------------------------
+// 🔑 ADMIN PASSCODE MANAGEMENT
+// -------------------------------------------------------------
+
+app.get('/api/admin/get-passcode', (req, res) => {
+    res.json({ passcode: currentAdminPasscode });
+});
+
+app.put('/api/admin/update-passcode', (req, res) => {
+    const { newPasscode } = req.body;
+    if (!newPasscode || newPasscode.trim().length < 4) {
+        return res.status(400).json({ message: 'Passcode must be at least 4 characters long!' });
+    }
+    currentAdminPasscode = newPasscode.trim();
+    res.json({ message: 'Admin secret passcode updated successfully!', passcode: currentAdminPasscode });
+});
+
+// -------------------------------------------------------------
 // 👥 ADMIN USER MANAGEMENT & PASSWORD RESET
 // -------------------------------------------------------------
 
@@ -127,7 +146,6 @@ app.put('/api/admin/manage-user/:id', async (req, res) => {
     }
 });
 
-// 🔑 SAFE ADMIN CHANGE PASSWORD ROUTE
 app.put('/api/admin/change-password/:id', async (req, res) => {
     const { newPassword } = req.body;
     const userId = req.params.id;
