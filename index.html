@@ -4,39 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Inventory ERP</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- SweetAlert2 for Professional Popups & Toasts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        .swal2-popup {
-            background: #1e293b !important;
-            color: #f8fafc !important;
-            border: 1px solid rgba(51, 65, 85, 0.6) !important;
-            border-radius: 1rem !important;
-        }
-        .swal2-title {
-            color: #f8fafc !important;
-        }
-        /* Hidden from view but fully rendered in DOM for Mobile Canvas Capture */
-        #invoiceContainer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 700px;
-            pointer-events: none;
-            opacity: 0;
-            z-index: -9999;
-        }
+        .swal2-popup { background: #1e293b !important; color: #f8fafc !important; border: 1px solid rgba(51, 65, 85, 0.6) !important; border-radius: 1rem !important; }
+        .swal2-title { color: #f8fafc !important; }
+        #invoiceContainer { position: fixed; top: 0; left: 0; width: 700px; pointer-events: none; opacity: 0; z-index: -9999; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-    <!-- 🌐 MAIN CONTAINER -->
     <div class="container mx-auto p-4 sm:p-6 max-w-6xl">
         
         <!-- HEADER -->
@@ -55,6 +34,7 @@
                 <div class="text-right hidden sm:block">
                     <p id="userName" class="font-bold text-sm text-slate-200"></p>
                     <span id="userRole" class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold tracking-wider uppercase"></span>
+                    <span id="userCurrency" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase ml-1"></span>
                 </div>
                 <button onclick="logout()" class="bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200">
                     <i class="fa-solid fa-arrow-right-from-bracket sm:mr-1"></i> <span class="hidden sm:inline">Logout</span>
@@ -62,7 +42,7 @@
             </div>
         </header>
 
-        <!-- 🔑 AUTH SECTION -->
+        <!-- AUTH SECTION -->
         <div id="authSection" class="my-12 max-w-md mx-auto">
             <div class="bg-slate-800/90 border border-slate-700/60 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
                 <div class="text-center mb-8">
@@ -102,19 +82,39 @@
                         <label class="text-xs font-semibold text-slate-400 mb-1 block">Password</label>
                         <input type="password" id="regPassword" placeholder="••••••••" class="w-full bg-slate-900/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500" required>
                     </div>
+                    
+                    <!-- 💱 Currency Selection -->
                     <div>
-                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Account Role</label>
-                        <select id="regRole" class="w-full bg-slate-900/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
-                            <option value="CUSTOMER">Customer Account</option>
-                            <option value="ADMIN">Admin Account</option>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Select Preferred Currency</label>
+                        <select id="regCurrency" class="w-full bg-slate-900/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                            <option value="BDT">BDT (৳ - Bangladeshi Taka)</option>
+                            <option value="USD">USD ($ - US Dollar)</option>
+                            <option value="EUR">EUR (€ - Euro)</option>
+                            <option value="INR">INR (₹ - Indian Rupee)</option>
+                            <option value="GBP">GBP (£ - British Pound)</option>
                         </select>
                     </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Account Role</label>
+                        <select id="regRole" onchange="toggleAdminCodeInput()" class="w-full bg-slate-900/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500">
+                            <option value="CUSTOMER">Customer Account (Requires Approval)</option>
+                            <option value="ADMIN">Admin Account (Requires Secret Code)</option>
+                        </select>
+                    </div>
+
+                    <!-- Secret Passcode for Admin -->
+                    <div id="adminPasscodeField" class="hidden">
+                        <label class="text-xs font-semibold text-rose-400 mb-1 block">Admin Secret Passcode</label>
+                        <input type="password" id="regAdminCode" placeholder="Enter Secret Passcode (ADMIN123)" class="w-full bg-slate-900/80 border border-rose-500/50 px-4 py-2.5 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-rose-500">
+                    </div>
+
                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">Create Account</button>
                 </form>
             </div>
         </div>
 
-        <!-- 📊 DASHBOARD SECTION -->
+        <!-- DASHBOARD SECTION -->
         <div id="dashboardSection" class="hidden space-y-6">
 
             <!-- ADMIN ANALYTICS CARDS -->
@@ -125,9 +125,7 @@
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
                             <h3 id="statRevenue" class="text-2xl font-black text-emerald-400 mt-1">$0.00</h3>
                         </div>
-                        <div class="bg-emerald-500/10 p-3 rounded-xl text-emerald-400">
-                            <i class="fa-solid fa-dollar-sign text-lg"></i>
-                        </div>
+                        <div class="bg-emerald-500/10 p-3 rounded-xl text-emerald-400"><i class="fa-solid fa-dollar-sign text-lg"></i></div>
                     </div>
                 </div>
 
@@ -137,37 +135,48 @@
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Products Sold</p>
                             <h3 id="statSold" class="text-2xl font-black text-indigo-400 mt-1">0 Pcs</h3>
                         </div>
-                        <div class="bg-indigo-500/10 p-3 rounded-xl text-indigo-400">
-                            <i class="fa-solid fa-chart-line text-lg"></i>
-                        </div>
+                        <div class="bg-indigo-500/10 p-3 rounded-xl text-indigo-400"><i class="fa-solid fa-chart-line text-lg"></i></div>
                     </div>
                 </div>
 
                 <div class="bg-slate-800/80 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden">
                     <div class="flex justify-between items-center">
                         <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Low Stock Alerts</p>
-                            <h3 id="statLowStock" class="text-2xl font-black text-rose-400 mt-1">0 Items</h3>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Approvals</p>
+                            <h3 id="statPending" class="text-2xl font-black text-amber-400 mt-1">0 Users</h3>
                         </div>
-                        <div class="bg-rose-500/10 p-3 rounded-xl text-rose-400">
-                            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                        </div>
+                        <div class="bg-amber-500/10 p-3 rounded-xl text-amber-400"><i class="fa-solid fa-user-clock text-lg"></i></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 📈 ADMIN ONLY: Sales Report Section -->
+            <!-- 👤 ADMIN ONLY: Customer Approvals Section -->
+            <div id="approvalSection" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-user-check text-amber-400"></i> Pending Customer Approvals
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
+                                <th class="p-3">User Name</th>
+                                <th class="p-3">Email</th>
+                                <th class="p-3">Currency</th>
+                                <th class="p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingUsersBody" class="divide-y divide-slate-700/50 text-sm">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ADMIN ONLY: Sales Report Section -->
             <div id="reportSection" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-file-csv text-indigo-400"></i> Sales Date-Range Report
-                    </h2>
-                    <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg transition-all flex items-center gap-2">
-                        <i class="fa-solid fa-download"></i> Download CSV Excel Report
-                    </button>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-file-csv text-indigo-400"></i> Sales Date-Range Report</h2>
+                    <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg flex items-center gap-2"><i class="fa-solid fa-download"></i> Download CSV Excel Report</button>
                 </div>
-
-                <!-- Date Range Inputs -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <div>
                         <label class="text-xs font-semibold text-slate-400 mb-1 block">Start Date</label>
@@ -177,12 +186,8 @@
                         <label class="text-xs font-semibold text-slate-400 mb-1 block">End Date</label>
                         <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-xl text-xs text-slate-200">
                     </div>
-                    <button onclick="fetchSalesReport()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold transition-all">
-                        Filter Report Data
-                    </button>
+                    <button onclick="fetchSalesReport()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold">Filter Report Data</button>
                 </div>
-
-                <!-- 📊 Live Report Table (Hidden by default, shows ONLY after filtering dates) -->
                 <div id="reportTableContainer" class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4 hidden">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -195,11 +200,8 @@
                                 <th class="p-2.5">Date</th>
                             </tr>
                         </thead>
-                        <tbody id="reportTableBody" class="divide-y divide-slate-700/50 text-xs">
-                        </tbody>
+                        <tbody id="reportTableBody" class="divide-y divide-slate-700/50 text-xs"></tbody>
                     </table>
-
-                    <!-- Pagination Controls -->
                     <div id="reportPagination" class="flex justify-between items-center text-xs text-slate-400 pt-3">
                         <span id="pageInfo">Page 1 of 1</span>
                         <div class="flex gap-2">
@@ -212,31 +214,25 @@
 
             <!-- ADMIN ONLY: Add Product Form -->
             <div id="adminPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-plus-circle text-indigo-400"></i> Add New Stock Item
-                </h2>
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-indigo-400"></i> Add New Stock Item</h2>
                 <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <input type="text" id="pName" placeholder="Product Name" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
-                    <input type="text" id="pSku" placeholder="SKU / Barcode (Optional)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
-                    <input type="number" id="pPrice" placeholder="Price ($)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
-                    <input type="number" id="pQuantity" placeholder="Stock Qty" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
-                    <button type="submit" class="md:col-span-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-sm shadow-md transition-all">+ Add Product to Database</button>
+                    <input type="text" id="pName" placeholder="Product Name" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm" required>
+                    <input type="text" id="pSku" placeholder="SKU / Barcode (Optional)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm">
+                    <input type="number" id="pPrice" placeholder="Price ($)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm" required>
+                    <input type="number" id="pQuantity" placeholder="Stock Qty" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm" required>
+                    <button type="submit" class="md:col-span-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-sm">+ Add Product to Database</button>
                 </form>
             </div>
 
-            <!-- PRODUCT LIST + SEARCH & FILTER -->
+            <!-- PRODUCT LIST -->
             <div class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-xl">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-box text-indigo-400"></i> Available Inventory Stock
-                    </h2>
-                    
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-box text-indigo-400"></i> Available Inventory Stock</h2>
                     <div class="relative w-full sm:w-64">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
-                        <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search product or SKU..." class="w-full bg-slate-900/90 border border-slate-700/80 pl-9 pr-4 py-2 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                        <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search product or SKU..." class="w-full bg-slate-900/90 border border-slate-700/80 pl-9 pr-4 py-2 rounded-xl text-xs text-slate-200">
                     </div>
                 </div>
-
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -248,18 +244,14 @@
                                 <th class="p-3 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody id="productTableBody" class="divide-y divide-slate-700/50 text-sm">
-                            <!-- Loaded via JS -->
-                        </tbody>
+                        <tbody id="productTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- CUSTOMER PURCHASE HISTORY -->
+            <!-- CUSTOMER ORDER HISTORY -->
             <div id="customerOrdersPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-receipt text-indigo-400"></i> My Purchase History
-                </h2>
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-receipt text-indigo-400"></i> My Purchase History</h2>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -272,9 +264,7 @@
                                 <th class="p-3 text-right">Invoice</th>
                             </tr>
                         </thead>
-                        <tbody id="ordersTableBody" class="divide-y divide-slate-700/50 text-sm">
-                            <!-- Loaded via JS -->
-                        </tbody>
+                        <tbody id="ordersTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody>
                     </table>
                 </div>
             </div>
@@ -283,7 +273,6 @@
 
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
         const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
         let allProducts = [];
@@ -292,17 +281,7 @@
         const rowsPerPage = 10;
 
         function showToast(message, type = 'success') {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                background: '#1e293b',
-                color: '#f8fafc'
-            });
-
-            Toast.fire({ icon: type, title: message });
+            Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true, background: '#1e293b', color: '#f8fafc' }).fire({ icon: type, title: message });
         }
 
         window.onload = () => {
@@ -310,17 +289,24 @@
             if (user) showDashboard(user);
         };
 
+        function toggleAdminCodeInput() {
+            const role = document.getElementById('regRole').value;
+            const passcodeField = document.getElementById('adminPasscodeField');
+            if (role === 'ADMIN') passcodeField.classList.remove('hidden');
+            else passcodeField.classList.add('hidden');
+        }
+
         function toggleAuth(type) {
             if (type === 'login') {
                 document.getElementById('loginForm').classList.remove('hidden');
                 document.getElementById('registerForm').classList.add('hidden');
-                document.getElementById('loginTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-indigo-400 bg-slate-800 shadow-sm';
-                document.getElementById('registerTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200';
+                document.getElementById('loginTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-indigo-400 bg-slate-800 shadow-sm';
+                document.getElementById('registerTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200';
             } else {
                 document.getElementById('loginForm').classList.add('hidden');
                 document.getElementById('registerForm').classList.remove('hidden');
-                document.getElementById('registerTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-indigo-400 bg-slate-800 shadow-sm';
-                document.getElementById('loginTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200';
+                document.getElementById('registerTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-indigo-400 bg-slate-800 shadow-sm';
+                document.getElementById('loginTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200';
             }
         }
 
@@ -334,19 +320,19 @@
                         name: document.getElementById('regName').value,
                         email: document.getElementById('regEmail').value,
                         password: document.getElementById('regPassword').value,
-                        role: document.getElementById('regRole').value
+                        currency: document.getElementById('regCurrency').value,
+                        role: document.getElementById('regRole').value,
+                        adminCode: document.getElementById('regAdminCode').value
                     })
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    showToast('Registration successful!', 'success');
+                    showToast(data.message, 'success');
                     toggleAuth('login');
                 } else {
                     showToast(data.message || 'Registration failed', 'error');
                 }
-            } catch (err) {
-                showToast('Server Connection Error!', 'error');
-            }
+            } catch (err) { showToast('Server Connection Error!', 'error'); }
         }
 
         async function handleLogin(e) {
@@ -363,21 +349,15 @@
                 const data = await res.json();
                 if (res.ok) {
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    localStorage.setItem('token', data.token);
                     showToast('Login successful!', 'success');
                     showDashboard(data.user);
                 } else {
                     showToast(data.message || 'Login failed', 'error');
                 }
-            } catch (err) {
-                showToast('Server Connection Error!', 'error');
-            }
+            } catch (err) { showToast('Server Connection Error!', 'error'); }
         }
 
-        function logout() {
-            localStorage.clear();
-            location.reload();
-        }
+        function logout() { localStorage.clear(); location.reload(); }
 
         function showDashboard(user) {
             document.getElementById('authSection').classList.add('hidden');
@@ -386,18 +366,57 @@
             
             document.getElementById('userName').innerText = user.name;
             document.getElementById('userRole').innerText = user.role;
+            document.getElementById('userCurrency').innerText = user.currency || 'USD';
 
             if (user.role === 'ADMIN') {
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('analyticsSection').classList.remove('hidden');
                 document.getElementById('reportSection').classList.remove('hidden');
+                document.getElementById('approvalSection').classList.remove('hidden');
                 loadAnalytics();
+                loadPendingUsers();
             } else {
                 document.getElementById('customerOrdersPanel').classList.remove('hidden');
                 loadCustomerOrders(user.id);
             }
 
             loadProducts(user);
+        }
+
+        async function loadPendingUsers() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/pending-users`);
+                const users = await res.json();
+                const tbody = document.getElementById('pendingUsersBody');
+                tbody.innerHTML = '';
+
+                if (users.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center p-4 text-slate-500">No pending customer approvals.</td></tr>`;
+                    return;
+                }
+
+                users.forEach(u => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-700/30">
+                            <td class="p-3 font-semibold">${u.name}</td>
+                            <td class="p-3 text-slate-400">${u.email}</td>
+                            <td class="p-3"><span class="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full text-xs font-bold">${u.currency || 'USD'}</span></td>
+                            <td class="p-3 text-right">
+                                <button onclick="approveUser(${u.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-md">Approve</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) { console.error('Error loading pending users:', err); }
+        }
+
+        async function approveUser(id) {
+            const res = await fetch(`${API_BASE}/admin/approve-user/${id}`, { method: 'PUT' });
+            if (res.ok) {
+                showToast('Customer approved successfully!', 'success');
+                loadPendingUsers();
+                loadAnalytics();
+            } else showToast('Failed to approve user', 'error');
         }
 
         async function loadAnalytics() {
@@ -407,68 +426,45 @@
 
                 document.getElementById('statRevenue').innerText = `$${stats.totalRevenue.toFixed(2)}`;
                 document.getElementById('statSold').innerText = `${stats.totalItemsSold} Pcs`;
-                document.getElementById('statLowStock').innerText = `${stats.lowStockCount} Items`;
-            } catch (err) {
-                console.error('Error loading analytics:', err);
-            }
+                document.getElementById('statPending').innerText = `${stats.pendingUsersCount} Users`;
+            } catch (err) { console.error('Error loading analytics:', err); }
         }
 
         async function fetchSalesReport() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
-
-            if (!start || !end) {
-                showToast('Please select both Start Date and End Date!', 'warning');
-                return;
-            }
-
-            let url = `${API_BASE}/admin/sales-report?startDate=${start}&endDate=${end}`;
+            if (!start || !end) { showToast('Please select both Start Date and End Date!', 'warning'); return; }
 
             try {
-                const res = await fetch(url);
+                const res = await fetch(`${API_BASE}/admin/sales-report?startDate=${start}&endDate=${end}`);
                 currentReportData = await res.json();
                 currentPage = 1;
-                
                 document.getElementById('reportTableContainer').classList.remove('hidden');
                 renderReportTable();
-
-                if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
-                    showToast('No sales records found for this period', 'info');
-                } else {
-                    showToast(`Loaded ${currentReportData.length} sales record(s)!`, 'success');
-                }
-            } catch (err) {
-                console.error('Fetch Sales Report Error:', err);
-                showToast('Failed to fetch sales report!', 'error');
-            }
+                showToast(`Loaded ${currentReportData.length} sales record(s)!`, 'success');
+            } catch (err) { showToast('Failed to fetch sales report!', 'error'); }
         }
 
         function renderReportTable() {
             const tbody = document.getElementById('reportTableBody');
             tbody.innerHTML = '';
-
             if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-500">No sales records found for selected dates.</td></tr>`;
-                document.getElementById('pageInfo').innerText = `Page 0 of 0`;
-                document.getElementById('btnPrevPage').disabled = true;
-                document.getElementById('btnNextPage').disabled = true;
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-500">No sales records found.</td></tr>`;
                 return;
             }
 
             const totalPages = Math.ceil(currentReportData.length / rowsPerPage);
-            const startIdx = (currentPage - 1) * rowsPerPage;
-            const paginatedData = currentReportData.slice(startIdx, startIdx + rowsPerPage);
+            const paginatedData = currentReportData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
             paginatedData.forEach(r => {
-                const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A';
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-700/30 transition-all">
+                    <tr class="hover:bg-slate-700/30">
                         <td class="p-2.5 font-mono text-indigo-400">#ORD-${r.sale_id}</td>
-                        <td class="p-2.5 font-semibold text-slate-200">${r.customer_name || 'Customer'}</td>
-                        <td class="p-2.5 text-slate-300">${r.product_name || 'Product'}</td>
-                        <td class="p-2.5 text-slate-300">${r.quantity || 0} Pcs</td>
-                        <td class="p-2.5 text-emerald-400 font-bold">$${r.total_amount || 0}</td>
-                        <td class="p-2.5 text-slate-400">${dateStr}</td>
+                        <td class="p-2.5 font-semibold">${r.customer_name}</td>
+                        <td class="p-2.5 text-slate-300">${r.product_name}</td>
+                        <td class="p-2.5">${r.quantity} Pcs</td>
+                        <td class="p-2.5 text-emerald-400 font-bold">$${r.total_amount}</td>
+                        <td class="p-2.5 text-slate-400">${new Date(r.created_at).toLocaleDateString()}</td>
                     </tr>
                 `;
             });
@@ -478,40 +474,17 @@
             document.getElementById('btnNextPage').disabled = currentPage === totalPages;
         }
 
-        function changeReportPage(direction) {
-            currentPage += direction;
-            renderReportTable();
-        }
+        function changeReportPage(dir) { currentPage += dir; renderReportTable(); }
 
         function exportToCSV() {
-            if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
-                showToast('Please filter by date range first to download CSV!', 'warning');
-                return;
-            }
-
+            if (!Array.isArray(currentReportData) || currentReportData.length === 0) { showToast('Filter report first!', 'warning'); return; }
             const headers = ["Order ID", "Customer Name", "Product Name", "Quantity", "Unit Price", "Total Amount", "Date"];
-            const rows = currentReportData.map(r => [
-                `#ORD-${r.sale_id}`,
-                `"${r.customer_name || 'Customer'}"`,
-                `"${r.product_name || 'Product'}"`,
-                r.quantity || 0,
-                `$${r.unit_price || 0}`,
-                `$${r.total_amount || 0}`,
-                r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A'
-            ]);
-
-            const csvString = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-            
-            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
+            const rows = currentReportData.map(r => [`#ORD-${r.sale_id}`, `"${r.customer_name}"`, `"${r.product_name}"`, r.quantity, `$${r.unit_price}`, `$${r.total_amount}`, new Date(r.created_at).toLocaleDateString()]);
+            const blob = new Blob([[headers.join(","), ...rows.map(e => e.join(","))].join("\n")], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Sales_Report_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
+            link.href = URL.createObjectURL(blob);
+            link.download = `Sales_Report_${new Date().toISOString().slice(0,10)}.csv`;
             link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-
             showToast('CSV Download Started!', 'success');
         }
 
@@ -524,203 +497,90 @@
         function renderProductTable(products, user) {
             const tbody = document.getElementById('productTableBody');
             tbody.innerHTML = '';
-
-            if (products.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-6 text-slate-500">No products found.</td></tr>`;
-                return;
-            }
-
             products.forEach(p => {
                 const isOutOfStock = p.quantity <= 0;
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-700/30 transition-all">
+                    <tr class="hover:bg-slate-700/30">
                         <td class="p-3 font-mono text-xs text-indigo-400 font-bold">${p.sku}</td>
                         <td class="p-3 font-semibold text-slate-200">${p.name}</td>
                         <td class="p-3 text-emerald-400 font-bold">$${p.price}</td>
-                        <td class="p-3">
-                            <span class="${p.quantity <= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700/50 text-slate-300'} text-xs font-bold px-2.5 py-1 rounded-full">
-                                ${p.quantity} Pcs
-                            </span>
-                        </td>
+                        <td class="p-3"><span class="${p.quantity <= 5 ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700/50 text-slate-300'} text-xs font-bold px-2.5 py-1 rounded-full">${p.quantity} Pcs</span></td>
                         <td class="p-3 text-right">
-                            ${user.role === 'CUSTOMER' 
-                                ? `
-                                    <div class="flex items-center justify-end gap-2">
-                                        <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-14 bg-slate-900 border border-slate-700 p-1 text-center rounded-lg text-xs" ${isOutOfStock ? 'disabled' : ''}>
-                                        <button onclick="buyProduct(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg text-xs font-semibold ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}" ${isOutOfStock ? 'disabled' : ''}>
-                                            ${isOutOfStock ? 'Out of Stock' : 'Buy Now'}
-                                        </button>
-                                    </div>
-                                  `
-                                : `
-                                    <div class="flex justify-end gap-2">
-                                        <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.quantity})" class="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-all" title="Edit Product">
-                                            <i class="fa-solid fa-pen-to-square"></i>
-                                        </button>
-                                        <button onclick="deleteProduct(${p.id})" class="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1.5 rounded-lg transition-all" title="Delete Product">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
-                                    </div>
-                                  `}
+                            ${user.role === 'CUSTOMER' ? `
+                                <div class="flex items-center justify-end gap-2">
+                                    <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-14 bg-slate-900 border border-slate-700 p-1 text-center rounded-lg text-xs" ${isOutOfStock ? 'disabled' : ''}>
+                                    <button onclick="buyProduct(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg text-xs font-semibold ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}" ${isOutOfStock ? 'disabled' : ''}>Buy Now</button>
+                                </div>
+                            ` : `
+                                <div class="flex justify-end gap-2">
+                                    <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.quantity})" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button onclick="deleteProduct(${p.id})" class="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
+                            `}
                         </td>
                     </tr>
                 `;
             });
         }
 
-        // ⚙️ EDIT PRODUCT MODAL FUNCTION
-        async function openEditModal(id, currentName, currentSku, currentPrice, currentQuantity) {
+        async function openEditModal(id, name, sku, price, qty) {
             const { value: formValues } = await Swal.fire({
                 title: 'Edit Product Details',
                 html: `
                     <div class="space-y-3 text-left">
-                        <div>
-                            <label class="text-xs text-slate-400 block mb-1">Product Name</label>
-                            <input id="swal-name" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white" value="${currentName}">
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-400 block mb-1">SKU / Barcode</label>
-                            <input id="swal-sku" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white" value="${currentSku}">
-                        </div>
+                        <div><label class="text-xs text-slate-400 block mb-1">Product Name</label><input id="swal-name" class="swal2-input !m-0 !w-full bg-slate-900 text-sm text-white" value="${name}"></div>
+                        <div><label class="text-xs text-slate-400 block mb-1">SKU / Barcode</label><input id="swal-sku" class="swal2-input !m-0 !w-full bg-slate-900 text-sm text-white" value="${sku}"></div>
                         <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-xs text-slate-400 block mb-1">Price ($)</label>
-                                <input id="swal-price" type="number" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white" value="${currentPrice}">
-                            </div>
-                            <div>
-                                <label class="text-xs text-slate-400 block mb-1">Stock Quantity</label>
-                                <input id="swal-qty" type="number" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white" value="${currentQuantity}">
-                            </div>
+                            <div><label class="text-xs text-slate-400 block mb-1">Price ($)</label><input id="swal-price" type="number" class="swal2-input !m-0 !w-full bg-slate-900 text-sm text-white" value="${price}"></div>
+                            <div><label class="text-xs text-slate-400 block mb-1">Stock Quantity</label><input id="swal-qty" type="number" class="swal2-input !m-0 !w-full bg-slate-900 text-sm text-white" value="${qty}"></div>
                         </div>
                     </div>
                 `,
-                focusConfirm: false,
-                showCancelButton: true,
-                confirmButtonText: 'Save Changes',
-                confirmButtonColor: '#4f46e5',
-                cancelButtonColor: '#475569',
-                preConfirm: () => {
-                    return {
-                        name: document.getElementById('swal-name').value,
-                        sku: document.getElementById('swal-sku').value,
-                        price: document.getElementById('swal-price').value,
-                        quantity: document.getElementById('swal-qty').value
-                    }
-                }
+                showCancelButton: true, confirmButtonText: 'Save Changes', confirmButtonColor: '#4f46e5',
+                preConfirm: () => ({ name: document.getElementById('swal-name').value, sku: document.getElementById('swal-sku').value, price: document.getElementById('swal-price').value, quantity: document.getElementById('swal-qty').value })
             });
 
             if (formValues) {
-                try {
-                    const res = await fetch(`${API_BASE}/products/${id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formValues)
-                    });
-
-                    const data = await res.json();
-                    if (res.ok) {
-                        showToast('Product updated successfully!', 'success');
-                        const user = JSON.parse(localStorage.getItem('user'));
-                        loadProducts(user);
-                        if (user.role === 'ADMIN') loadAnalytics();
-                    } else {
-                        showToast(data.message || 'Update failed', 'error');
-                    }
-                } catch (err) {
-                    showToast('Failed to connect to server', 'error');
-                }
+                const res = await fetch(`${API_BASE}/products/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formValues) });
+                if (res.ok) { showToast('Product updated!', 'success'); loadProducts(JSON.parse(localStorage.getItem('user'))); }
             }
         }
 
         function filterProducts() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            const user = JSON.parse(localStorage.getItem('user'));
-            const filtered = allProducts.filter(p => 
-                p.name.toLowerCase().includes(query) || 
-                p.sku.toLowerCase().includes(query)
-            );
-            renderProductTable(filtered, user);
+            renderProductTable(allProducts.filter(p => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)), JSON.parse(localStorage.getItem('user')));
         }
 
-        async function buyProduct(productId) {
+        async function buyProduct(id) {
             const user = JSON.parse(localStorage.getItem('user'));
-            const qtyInput = document.getElementById(`qty-${productId}`);
-            const quantity = parseInt(qtyInput.value);
+            const qty = parseInt(document.getElementById(`qty-${id}`).value);
+            const res = await fetch(`${API_BASE}/sales`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: user.id, product_id: id, quantity: qty }) });
+            if (res.ok) { showToast('Purchase successful!', 'success'); loadProducts(user); loadCustomerOrders(user.id); }
+            else showToast('Purchase failed', 'error');
+        }
 
-            if (!quantity || quantity <= 0) {
-                showToast('Please enter a valid quantity', 'warning');
-                return;
-            }
-
-            const res = await fetch(`${API_BASE}/sales`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ customer_id: user.id, product_id: productId, quantity: quantity })
-            });
-
-            const data = await res.json();
-            if (res.ok) {
-                showToast('Purchase successful!', 'success');
-                loadProducts(user);
-                loadCustomerOrders(user.id);
-            } else {
-                showToast(data.message || 'Purchase failed', 'error');
+        async function deleteProduct(id) {
+            if ((await Swal.fire({ title: 'Delete Product?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e11d48' })).isConfirmed) {
+                await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
+                showToast('Product deleted!', 'success');
+                loadProducts(JSON.parse(localStorage.getItem('user')));
             }
         }
 
-        async function deleteProduct(productId) {
-            const result = await Swal.fire({
-                title: 'Delete Product?',
-                text: "This action cannot be undone!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#e11d48',
-                cancelButtonColor: '#475569',
-                confirmButtonText: 'Yes, Delete It!'
-            });
-
-            if (!result.isConfirmed) return;
-
-            const user = JSON.parse(localStorage.getItem('user'));
-            const res = await fetch(`${API_BASE}/products/${productId}`, { method: 'DELETE' });
-
-            if (res.ok) {
-                showToast('Product deleted successfully!', 'success');
-                loadProducts(user);
-                if (user.role === 'ADMIN') loadAnalytics();
-            } else {
-                showToast('Failed to delete product', 'error');
-            }
-        }
-
-        async function loadCustomerOrders(customerId) {
-            const res = await fetch(`${API_BASE}/sales/customer/${customerId}`);
+        async function loadCustomerOrders(id) {
+            const res = await fetch(`${API_BASE}/sales/customer/${id}`);
             const orders = await res.json();
-
             const tbody = document.getElementById('ordersTableBody');
             tbody.innerHTML = '';
-
-            if (orders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-slate-500">No purchase history found.</td></tr>`;
-                return;
-            }
-
             orders.forEach(o => {
-                const date = new Date(o.created_at).toLocaleDateString();
-                const orderData = JSON.stringify(o).replace(/"/g, '&quot;');
-                
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-700/30 transition-all">
+                    <tr class="hover:bg-slate-700/30">
                         <td class="p-3 font-mono text-xs text-indigo-400">#ORD-${o.sale_id}</td>
-                        <td class="p-3 font-semibold text-slate-200">${o.product_name}</td>
-                        <td class="p-3 text-slate-300">${o.quantity} Pcs</td>
+                        <td class="p-3 font-semibold">${o.product_name}</td>
+                        <td class="p-3">${o.quantity} Pcs</td>
                         <td class="p-3 text-emerald-400 font-bold">$${o.total_amount}</td>
-                        <td class="p-3 text-slate-400 text-xs">${date}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="downloadPDF(${orderData})" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded-lg text-xs">
-                                📄 Invoice
-                            </button>
-                        </td>
+                        <td class="p-3 text-slate-400 text-xs">${new Date(o.created_at).toLocaleDateString()}</td>
+                        <td class="p-3 text-right"><button onclick='downloadPDF(${JSON.stringify(o)})' class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg text-xs">📄 Invoice</button></td>
                     </tr>
                 `;
             });
@@ -728,37 +588,15 @@
 
         async function handleAddProduct(e) {
             e.preventDefault();
-            const pName = document.getElementById('pName').value;
-            let pSku = document.getElementById('pSku').value;
-            const pPrice = document.getElementById('pPrice').value;
-            const pQuantity = document.getElementById('pQuantity').value;
-
-            if (!pSku || pSku.trim() === '') {
-                pSku = 'SKU-' + Math.floor(100000 + Math.random() * 900000);
-            }
-
             const res = await fetch(`${API_BASE}/products`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: pName, sku: pSku, price: pPrice, quantity: pQuantity })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: document.getElementById('pName').value, sku: document.getElementById('pSku').value, price: document.getElementById('pPrice').value, quantity: document.getElementById('pQuantity').value })
             });
-
-            const data = await res.json();
-            if (res.ok) {
-                showToast(data.message || 'Product added successfully!', 'success');
-                e.target.reset();
-                const user = JSON.parse(localStorage.getItem('user'));
-                loadProducts(user);
-                if (user.role === 'ADMIN') loadAnalytics();
-            } else {
-                showToast(data.message || 'Failed to add product', 'error');
-            }
+            if (res.ok) { showToast('Product added!', 'success'); e.target.reset(); loadProducts(JSON.parse(localStorage.getItem('user'))); }
         }
 
-        // 📱 FIXED PDF GENERATOR
         async function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
-
             document.getElementById('invDate').innerText = `Date: ${new Date(order.created_at).toLocaleDateString()}`;
             document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
             document.getElementById('invCustomerName').innerText = user ? user.name : 'Customer';
@@ -766,73 +604,39 @@
             document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
             document.getElementById('invUnitPrice').innerText = `$${order.unit_price}`;
             document.getElementById('invTotal').innerText = `$${order.total_amount}`;
-
-            const element = document.getElementById('invoiceTemplate');
-
             showToast('Generating Invoice PDF...', 'info');
-
             await new Promise(resolve => setTimeout(resolve, 200));
-
-            const opt = {
-                margin:       0.3,
-                filename:     `Invoice_ORD_${order.sale_id}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, logging: false },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
-
-            try {
-                await html2pdf().set(opt).from(element).save();
-                showToast('Invoice PDF downloaded!', 'success');
-            } catch (err) {
-                console.error('PDF Error:', err);
-                showToast('Failed to download PDF', 'error');
-            }
+            await html2pdf().set({ margin: 0.3, filename: `Invoice_ORD_${order.sale_id}.pdf`, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(document.getElementById('invoiceTemplate')).save();
+            showToast('Invoice PDF downloaded!', 'success');
         }
     </script>
 
-    <!-- 🧾 INVOICE TEMPLATE (In-DOM Rendered Container) -->
     <div id="invoiceContainer">
         <div id="invoiceTemplate" class="p-8 font-sans bg-white text-slate-800">
-            <div class="flex justify-between items-center border-b border-slate-200 pb-4 mb-6">
-                <div>
-                    <h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1>
-                    <p class="text-sm text-slate-500">StockFlow ERP System</p>
-                </div>
-                <div class="text-right">
-                    <p id="invDate" class="text-sm text-slate-600"></p>
-                    <p id="invNumber" class="font-bold font-mono text-slate-800"></p>
-                </div>
+            <div class="flex justify-between items-center border-b pb-4 mb-6">
+                <div><h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1><p class="text-sm text-slate-500">StockFlow ERP System</p></div>
+                <div class="text-right"><p id="invDate" class="text-sm text-slate-600"></p><p id="invNumber" class="font-bold font-mono text-slate-800"></p></div>
             </div>
-
-            <div class="mb-6">
-                <h3 class="text-xs uppercase font-bold text-slate-400 mb-1">Billed To:</h3>
-                <p id="invCustomerName" class="font-semibold text-lg text-slate-800"></p>
-            </div>
-
+            <div class="mb-6"><h3 class="text-xs uppercase font-bold text-slate-400 mb-1">Billed To:</h3><p id="invCustomerName" class="font-semibold text-lg text-slate-800"></p></div>
             <table class="w-full text-left border-collapse mb-6">
                 <thead>
-                    <tr class="border-b-2 border-slate-200 bg-slate-50">
-                        <th class="py-2 px-3 text-sm font-bold text-slate-700">Product Name</th>
-                        <th class="py-2 px-3 text-sm font-bold text-center text-slate-700">Qty</th>
-                        <th class="py-2 px-3 text-sm font-bold text-right text-slate-700">Unit Price</th>
-                        <th class="py-2 px-3 text-sm font-bold text-right text-slate-700">Total</th>
+                    <tr class="border-b-2 bg-slate-50">
+                        <th class="py-2 px-3 text-sm font-bold">Product Name</th>
+                        <th class="py-2 px-3 text-sm font-bold text-center">Qty</th>
+                        <th class="py-2 px-3 text-sm font-bold text-right">Unit Price</th>
+                        <th class="py-2 px-3 text-sm font-bold text-right">Total</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="border-b border-slate-200">
-                        <td id="invProductName" class="py-3 px-3 text-slate-800"></td>
-                        <td id="invQty" class="py-3 px-3 text-center text-slate-800"></td>
-                        <td id="invUnitPrice" class="py-3 px-3 text-right text-slate-800"></td>
+                    <tr class="border-b">
+                        <td id="invProductName" class="py-3 px-3"></td>
+                        <td id="invQty" class="py-3 px-3 text-center"></td>
+                        <td id="invUnitPrice" class="py-3 px-3 text-right"></td>
                         <td id="invTotal" class="py-3 px-3 text-right font-bold text-emerald-600"></td>
                     </tr>
                 </tbody>
             </table>
-
-            <div class="border-t border-slate-200 pt-4 text-center text-xs text-slate-400">
-                <p>Thank you for your business!</p>
-                <p>Generated automatically via StockFlow ERP</p>
-            </div>
+            <div class="border-t pt-4 text-center text-xs text-slate-400"><p>Thank you for your business!</p></div>
         </div>
     </div>
 </body>
