@@ -46,7 +46,6 @@
                         <span id="userRole" class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold uppercase"></span>
                         <span id="userCurrencyBadge" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase"></span>
                     </div>
-                    <!-- 🕒 ELEGANT LOGGED IN TIME BADGE -->
                     <p class="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5 font-medium shadow-sm">
                         <i class="fa-solid fa-clock text-[10px] text-amber-400"></i>
                         <span id="userLastLoginText">Logged in: Just now</span>
@@ -169,27 +168,36 @@
                     </div>
                 </div>
 
-                <!-- ADMIN ONLY: Add Product Form -->
+                <!-- ADMIN ONLY: Add Product Form (EXPANDED FIELDS) -->
                 <div id="adminPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
                     <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-indigo-400"></i> Add New Stock Item</h2>
-                    <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-6 gap-3">
-                        <input type="text" id="pName" placeholder="Product Name" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs" required>
-                        <input type="text" id="pSku" placeholder="SKU (Optional)" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
+                    <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <input type="text" id="pName" placeholder="Product Name *" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs" required>
+                        <input type="text" id="pSku" placeholder="SKU / Barcode" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
                         <input type="text" id="pCategory" placeholder="Category (e.g. Electronics)" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
-                        <input type="number" id="pCostPrice" placeholder="Cost Price" step="0.01" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs" required>
-                        <input type="number" id="pPrice" placeholder="Selling Price" step="0.01" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs" required>
-                        <input type="number" id="pQuantity" placeholder="Stock Qty" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs" required>
-                        <button type="submit" class="md:col-span-6 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-xl text-xs">+ Add Product to Database</button>
+                        <input type="text" id="pBrand" placeholder="Brand Name (e.g. Apple)" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
+                        <input type="text" id="pSupplier" placeholder="Supplier / Vendor" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
+                        
+                        <input type="text" id="pLocation" placeholder="Location (e.g. Rack-A, Shelf-2)" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
+                        <div>
+                            <label class="text-[10px] text-slate-400 block mb-0.5">Expiry Date (Optional)</label>
+                            <input type="date" id="pExpiry" class="w-full bg-slate-900/80 border border-slate-700 px-3 py-1.5 rounded-xl text-xs text-slate-200">
+                        </div>
+                        <input type="number" id="pCostPrice" placeholder="Cost Price *" step="0.01" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs mt-auto" required>
+                        <input type="number" id="pPrice" placeholder="Selling Price *" step="0.01" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs mt-auto" required>
+                        <input type="number" id="pQuantity" placeholder="Stock Qty *" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs mt-auto" required>
+                        
+                        <button type="submit" class="md:col-span-5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs mt-2">+ Add Product to Database</button>
                     </form>
                 </div>
 
-                <!-- PRODUCT LIST -->
+                <!-- PRODUCT LIST TABLE -->
                 <div class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-xl">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-box text-indigo-400"></i> Available Inventory Stock</h2>
                         <div class="relative w-full sm:w-64">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
-                            <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search product or SKU..." class="w-full bg-slate-900/90 border border-slate-700/80 pl-9 pr-4 py-2 rounded-xl text-xs text-slate-200">
+                            <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search product, SKU or brand..." class="w-full bg-slate-900/90 border border-slate-700/80 pl-9 pr-4 py-2 rounded-xl text-xs text-slate-200">
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -198,7 +206,8 @@
                                 <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
                                     <th class="p-3">SKU</th>
                                     <th class="p-3">Product Name</th>
-                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Category & Brand</th>
+                                    <th class="p-3">Rack Location</th>
                                     <th class="p-3">Price</th>
                                     <th class="p-3">Available Stock</th>
                                     <th class="p-3 text-right">Action</th>
@@ -280,7 +289,7 @@
                     </table>
                 </div>
 
-                <!-- 📄 REPORT PAGINATION (5 ITEMS PER PAGE) -->
+                <!-- REPORT PAGINATION -->
                 <div id="reportPaginationControls" class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700/50">
                     <span id="reportPageInfo">Page 1 of 1</span>
                     <div class="flex gap-2">
@@ -318,7 +327,7 @@
                 </form>
             </div>
 
-            <!-- CUSTOMER PURCHASE HISTORY (FOR CUSTOMERS ONLY) -->
+            <!-- CUSTOMER PURCHASE HISTORY -->
             <div id="customerOrdersPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
                 <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-receipt text-indigo-400"></i> My Purchase History</h2>
                 <div class="overflow-x-auto">
@@ -357,19 +366,18 @@
 
         function getCurrencySymbol(code) { return CURRENCY_SYMBOLS[code] || '$'; }
 
-        // 🕒 ELEGANT DATE & TIME FORMATTER (Day, Month, Date, Year, Time)
         function formatDateTime(isoString) {
             if (!isoString) return 'N/A';
             const d = new Date(isoString);
             return d.toLocaleString('en-US', {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
+                weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
             });
+        }
+
+        function formatDateOnly(isoString) {
+            if (!isoString) return 'N/A';
+            return new Date(isoString).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
         }
 
         function showToast(message, type = 'success') {
@@ -468,7 +476,6 @@
             document.getElementById('userRole').innerText = user.role;
             document.getElementById('userCurrencyBadge').innerText = user.currency || 'USD';
 
-            // 🕒 Render Logged In Date & Time Header Display
             const loginFormatted = formatDateTime(user.lastLogin || new Date().toISOString());
             document.getElementById('userLastLoginText').innerText = `Logged: ${loginFormatted}`;
 
@@ -724,8 +731,8 @@
                 thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>Order ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total (${sym})</th><th>Date & Time</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">#ORD-${r.sale_id}</td><td class="p-2.5 font-semibold">${r.customer_name}</td><td class="p-2.5">${r.product_name}</td><td class="p-2.5">${r.quantity} Pcs</td><td class="p-2.5 font-bold text-emerald-400">${sym}${r.total_amount}</td><td class="p-2.5 text-slate-400">${formatDateTime(r.created_at)}</td></tr>`);
             } else if (activeReportType === 'stocks') {
-                thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>SKU</th><th>Product Name</th><th>Category</th><th>Selling Price</th><th>Cost Price</th><th>Stock Status</th></tr>`;
-                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">${r.sku}</td><td class="p-2.5 font-bold">${r.name}</td><td class="p-2.5">${r.category}</td><td class="p-2.5 text-emerald-400 font-bold">${sym}${r.price}</td><td class="p-2.5 text-slate-400">${sym}${r.cost_price}</td><td class="p-2.5 font-bold ${r.quantity <= 5 ? 'text-rose-400' : 'text-emerald-400'}">${r.quantity} Pcs</td></tr>`);
+                thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>SKU</th><th>Product Name</th><th>Category & Brand</th><th>Location</th><th>Selling Price</th><th>Stock Status</th></tr>`;
+                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">${r.sku}</td><td class="p-2.5 font-bold">${r.name}</td><td class="p-2.5">${r.category} (${r.brand || 'Generic'})</td><td class="p-2.5 text-amber-400">${r.location || 'Main Stock'}</td><td class="p-2.5 text-emerald-400 font-bold">${sym}${r.price}</td><td class="p-2.5 font-bold ${r.quantity <= 5 ? 'text-rose-400' : 'text-emerald-400'}">${r.quantity} Pcs</td></tr>`);
             } else if (activeReportType === 'profit') {
                 thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>Product Name</th><th>Total Sold</th><th>Gross Revenue</th><th>Total Cost</th><th>Net Profit (${sym})</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 font-bold">${r.product_name}</td><td class="p-2.5">${r.total_sold} Pcs</td><td class="p-2.5 text-sky-400">${sym}${r.gross_revenue}</td><td class="p-2.5 text-slate-400">${sym}${r.total_cost}</td><td class="p-2.5 font-black text-emerald-400">${sym}${r.net_profit}</td></tr>`);
@@ -767,8 +774,15 @@
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-700/30">
                         <td class="p-3 font-mono text-xs text-indigo-400 font-bold">${p.sku}</td>
-                        <td class="p-3 font-semibold text-slate-200">${p.name}</td>
-                        <td class="p-3 text-slate-400 text-xs">${p.category || 'General'}</td>
+                        <td class="p-3 font-semibold text-slate-200">
+                            ${p.name}
+                            ${p.expiry_date ? `<div class="text-[10px] text-amber-400 mt-0.5"><i class="fa-solid fa-calendar-xmark mr-1"></i>Exp: ${formatDateOnly(p.expiry_date)}</div>` : ''}
+                        </td>
+                        <td class="p-3 text-slate-300 text-xs">
+                            <span class="text-indigo-300 font-medium">${p.category || 'General'}</span>
+                            <div class="text-[10px] text-slate-400">${p.brand || 'Generic'}</div>
+                        </td>
+                        <td class="p-3 text-amber-400/90 text-xs font-mono"><i class="fa-solid fa-location-dot mr-1 text-[10px]"></i>${p.location || 'Main Stock'}</td>
                         <td class="p-3 text-emerald-400 font-bold">${sym}${p.price}</td>
                         <td class="p-3"><span class="${p.quantity <= 5 ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700/50 text-slate-300'} text-xs font-bold px-2.5 py-1 rounded-full">${p.quantity} Pcs</span></td>
                         <td class="p-3 text-right">
@@ -779,7 +793,7 @@
                                 </div>
                             ` : `
                                 <div class="flex justify-end gap-2">
-                                    <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price || 0}, '${p.category || 'General'}', ${p.quantity})" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price || 0}, '${p.category || 'General'}', '${p.brand || 'Generic'}', '${p.supplier || 'N/A'}', '${p.location || 'Main Stock'}', '${p.expiry_date ? p.expiry_date.slice(0,10) : ''}', ${p.quantity})" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg"><i class="fa-solid fa-pen-to-square"></i></button>
                                     <button onclick="deleteProduct(${p.id})" class="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
                                 </div>
                             `}
@@ -789,18 +803,28 @@
             });
         }
 
-        async function openEditModal(id, name, sku, price, costPrice, category, qty) {
+        async function openEditModal(id, name, sku, price, costPrice, category, brand, supplier, location, expiryDate, qty) {
             const { value: formValues } = await Swal.fire({
                 title: 'Edit Product Details',
                 html: `
-                    <div class="space-y-3 text-left">
-                        <div><label class="text-xs text-slate-400 block mb-1">Product Name</label><input id="swal-name" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${name}"></div>
-                        <div><label class="text-xs text-slate-400 block mb-1">SKU / Barcode</label><input id="swal-sku" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${sku}"></div>
-                        <div><label class="text-xs text-slate-400 block mb-1">Category</label><input id="swal-cat" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${category}"></div>
+                    <div class="space-y-2 text-left">
+                        <div><label class="text-[10px] text-slate-400 block mb-0.5">Product Name</label><input id="swal-name" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${name}"></div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">SKU / Barcode</label><input id="swal-sku" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${sku}"></div>
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">Category</label><input id="swal-cat" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${category}"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">Brand</label><input id="swal-brand" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${brand}"></div>
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">Supplier</label><input id="swal-supplier" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${supplier}"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">Warehouse Location</label><input id="swal-loc" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${location}"></div>
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">Expiry Date</label><input id="swal-exp" type="date" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${expiryDate}"></div>
+                        </div>
                         <div class="grid grid-cols-3 gap-2">
-                            <div><label class="text-xs text-slate-400 block mb-1">Selling Price</label><input id="swal-price" type="number" step="0.01" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${price}"></div>
-                            <div><label class="text-xs text-slate-400 block mb-1">Cost Price</label><input id="swal-cost" type="number" step="0.01" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${costPrice}"></div>
-                            <div><label class="text-xs text-slate-400 block mb-1">Stock Qty</label><input id="swal-qty" type="number" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${qty}"></div>
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">Selling Price</label><input id="swal-price" type="number" step="0.01" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${price}"></div>
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">Cost Price</label><input id="swal-cost" type="number" step="0.01" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${costPrice}"></div>
+                            <div><label class="text-[10px] text-slate-400 block mb-0.5">Stock Qty</label><input id="swal-qty" type="number" class="swal2-input !m-0 !w-full bg-slate-900 text-xs text-white" value="${qty}"></div>
                         </div>
                     </div>
                 `,
@@ -809,6 +833,10 @@
                     name: document.getElementById('swal-name').value,
                     sku: document.getElementById('swal-sku').value,
                     category: document.getElementById('swal-cat').value,
+                    brand: document.getElementById('swal-brand').value,
+                    supplier: document.getElementById('swal-supplier').value,
+                    location: document.getElementById('swal-loc').value,
+                    expiry_date: document.getElementById('swal-exp').value,
                     price: document.getElementById('swal-price').value,
                     cost_price: document.getElementById('swal-cost').value,
                     quantity: document.getElementById('swal-qty').value
@@ -823,7 +851,11 @@
 
         function filterProducts() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            renderProductTable(allProducts.filter(p => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query)), JSON.parse(localStorage.getItem('user')));
+            renderProductTable(allProducts.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                p.sku.toLowerCase().includes(query) ||
+                (p.brand && p.brand.toLowerCase().includes(query))
+            ), JSON.parse(localStorage.getItem('user')));
         }
 
         async function buyProduct(id) {
@@ -872,19 +904,23 @@
                     name: document.getElementById('pName').value,
                     sku: document.getElementById('pSku').value,
                     category: document.getElementById('pCategory').value,
+                    brand: document.getElementById('pBrand').value,
+                    supplier: document.getElementById('pSupplier').value,
+                    location: document.getElementById('pLocation').value,
+                    expiry_date: document.getElementById('pExpiry').value,
                     cost_price: document.getElementById('pCostPrice').value,
                     price: document.getElementById('pPrice').value,
                     quantity: document.getElementById('pQuantity').value
                 })
             });
-            if (res.ok) { showToast('Product added!', 'success'); e.target.reset(); loadProducts(JSON.parse(localStorage.getItem('user'))); }
+            if (res.ok) { showToast('Product added successfully!', 'success'); e.target.reset(); loadProducts(JSON.parse(localStorage.getItem('user'))); }
         }
 
         async function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
 
-            document.getElementById('invDate').innerText = `Date: ${new Date(order.created_at).toLocaleDateString()}`;
+            document.getElementById('invDate').innerText = `Date: ${formatDateOnly(order.created_at)}`;
             document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
             document.getElementById('invCustomerName').innerText = user ? user.name : 'Customer';
             document.getElementById('invProductName').innerText = order.product_name;

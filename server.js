@@ -74,7 +74,6 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(403).json({ message: 'Your account is pending Admin approval.' });
         }
 
-        // 🕒 Capture exact Login Time & Update Database
         const loginTime = new Date().toISOString();
         await db.query('UPDATE users SET updated_at = $1 WHERE id = $2', [loginTime, user.id]);
 
@@ -115,7 +114,7 @@ app.put('/api/admin/update-passcode', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 👥 ADMIN USER MANAGEMENT & PASSWORD RESET
+// 👥 ADMIN USER MANAGEMENT
 // -------------------------------------------------------------
 
 app.get('/api/admin/users-stats', async (req, res) => {
@@ -194,7 +193,7 @@ app.delete('/api/admin/delete-user/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 📦 PRODUCT ROUTES
+// 📦 EXPANDED PRODUCT ROUTES (Brand, Supplier, Location, Expiry)
 // -------------------------------------------------------------
 
 app.get('/api/products', async (req, res) => {
@@ -207,30 +206,45 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/products', async (req, res) => {
-    let { name, sku, quantity, price, cost_price, category } = req.body;
+    let { name, sku, quantity, price, cost_price, category, brand, supplier, location, expiry_date } = req.body;
     if (!name || !price) return res.status(400).json({ message: 'Name and Price required!' });
     if (!sku || sku.trim() === '') sku = 'SKU-' + Math.floor(100000 + Math.random() * 900000);
 
     try {
         const newProduct = await db.query(
-            'INSERT INTO products (name, sku, quantity, price, cost_price, category, alert_quantity) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [name, sku, quantity || 0, price, cost_price || 0, category || 'General', 5]
+            `INSERT INTO products 
+             (name, sku, quantity, price, cost_price, category, brand, supplier, location, expiry_date, alert_quantity) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+            [
+                name, sku, quantity || 0, price, cost_price || 0, 
+                category || 'General', brand || 'Generic', supplier || 'N/A', 
+                location || 'Main Stock', expiry_date || null, 5
+            ]
         );
         res.status(201).json({ message: 'Product added successfully', product: newProduct.rows[0] });
     } catch (err) {
+        console.error('Add Product Error:', err.message);
         res.status(500).json({ error: 'Database query error' });
     }
 });
 
 app.put('/api/products/:id', async (req, res) => {
-    const { name, sku, price, cost_price, category, quantity } = req.body;
+    const { name, sku, price, cost_price, category, brand, supplier, location, expiry_date, quantity } = req.body;
     try {
         const result = await db.query(
-            'UPDATE products SET name = $1, sku = $2, price = $3, cost_price = $4, category = $5, quantity = $6 WHERE id = $7 RETURNING *',
-            [name, sku, price, cost_price || 0, category || 'General', quantity || 0, req.params.id]
+            `UPDATE products SET 
+             name = $1, sku = $2, price = $3, cost_price = $4, category = $5, 
+             brand = $6, supplier = $7, location = $8, expiry_date = $9, quantity = $10 
+             WHERE id = $11 RETURNING *`,
+            [
+                name, sku, price, cost_price || 0, category || 'General', 
+                brand || 'Generic', supplier || 'N/A', location || 'Main Stock', 
+                expiry_date || null, quantity || 0, req.params.id
+            ]
         );
         res.json({ message: 'Product updated successfully!', product: result.rows[0] });
     } catch (err) {
+        console.error('Update Product Error:', err.message);
         res.status(500).json({ error: 'Failed to update product' });
     }
 });
@@ -323,7 +337,7 @@ app.get('/api/admin/reports/:type', async (req, res) => {
             query += ` ORDER BY s.id DESC`;
         } 
         else if (type === 'stocks') {
-            query = `SELECT id, name, sku, category, price, cost_price, quantity FROM products ORDER BY quantity ASC`;
+            query = `SELECT id, name, sku, category, brand, supplier, location, expiry_date, price, cost_price, quantity FROM products ORDER BY quantity ASC`;
         }
         else if (type === 'profit') {
             query = `
