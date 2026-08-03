@@ -157,8 +157,8 @@
             </div>
 
             <!-- 📈 ADMIN ONLY: Sales Report & CSV Export Section -->
-            <div id="reportSection" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <div id="reportSection" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
                         <i class="fa-solid fa-file-csv text-indigo-400"></i> Sales Date-Range Report
                     </h2>
@@ -181,6 +181,25 @@
                         Filter Report Data
                     </button>
                 </div>
+
+                <!-- Live Report Table -->
+                <div class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
+                                <th class="p-2.5">Order ID</th>
+                                <th class="p-2.5">Customer</th>
+                                <th class="p-2.5">Product</th>
+                                <th class="p-2.5">Qty</th>
+                                <th class="p-2.5">Total</th>
+                                <th class="p-2.5">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="divide-y divide-slate-700/50 text-xs">
+                            <tr><td colspan="6" class="text-center p-4 text-slate-500">Click "Filter Report Data" to load report.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- ADMIN ONLY: Add Product Form -->
@@ -190,7 +209,6 @@
                 </h2>
                 <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <input type="text" id="pName" placeholder="Product Name" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
-                    <!-- SKU is optional -->
                     <input type="text" id="pSku" placeholder="SKU / Barcode (Optional)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
                     <input type="number" id="pPrice" placeholder="Price ($)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
                     <input type="number" id="pQuantity" placeholder="Stock Qty" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
@@ -398,18 +416,40 @@
             try {
                 const res = await fetch(url);
                 currentReportData = await res.json();
-                if (currentReportData.length === 0) {
+
+                const tbody = document.getElementById('reportTableBody');
+                tbody.innerHTML = '';
+
+                if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-500">No sales records found.</td></tr>`;
                     showToast('No sales records found', 'info');
-                } else {
-                    showToast(`Loaded ${currentReportData.length} sales record(s)!`, 'success');
+                    return;
                 }
+
+                currentReportData.forEach(r => {
+                    const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A';
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-700/30 transition-all">
+                            <td class="p-2.5 font-mono text-indigo-400">#ORD-${r.sale_id}</td>
+                            <td class="p-2.5 font-semibold text-slate-200">${r.customer_name || 'Customer'}</td>
+                            <td class="p-2.5 text-slate-300">${r.product_name || 'Product'}</td>
+                            <td class="p-2.5 text-slate-300">${r.quantity || 0} Pcs</td>
+                            <td class="p-2.5 text-emerald-400 font-bold">$${r.total_amount || 0}</td>
+                            <td class="p-2.5 text-slate-400">${dateStr}</td>
+                        </tr>
+                    `;
+                });
+
+                showToast(`Loaded ${currentReportData.length} sales record(s)!`, 'success');
+
             } catch (err) {
+                console.error('Fetch Sales Report Error:', err);
                 showToast('Failed to fetch sales report!', 'error');
             }
         }
 
         function exportToCSV() {
-            if (!currentReportData || currentReportData.length === 0) {
+            if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
                 showToast('No sales records found to export!', 'warning');
                 return;
             }
@@ -417,12 +457,12 @@
             const headers = ["Order ID", "Customer Name", "Product Name", "Quantity", "Unit Price", "Total Amount", "Date"];
             const rows = currentReportData.map(r => [
                 `#ORD-${r.sale_id}`,
-                `"${r.customer_name}"`,
-                `"${r.product_name}"`,
-                r.quantity,
-                `$${r.unit_price}`,
-                `$${r.total_amount}`,
-                new Date(r.created_at).toLocaleDateString()
+                `"${r.customer_name || 'Customer'}"`,
+                `"${r.product_name || 'Product'}"`,
+                r.quantity || 0,
+                `$${r.unit_price || 0}`,
+                `$${r.total_amount || 0}`,
+                r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A'
             ]);
 
             const csvString = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -611,7 +651,6 @@
             }
         }
 
-        // 📱 Mobile-Safe Full-Page PDF Generator
         function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
 
@@ -644,7 +683,7 @@
         }
     </script>
 
-    <!-- 🧾 INVOICE TEMPLATE (Optimized for Mobile HTML2PDF Canvas) -->
+    <!-- 🧾 INVOICE TEMPLATE -->
     <div id="invoiceTemplate" class="p-8 font-sans">
         <div class="flex justify-between items-center border-b pb-4 mb-6">
             <div>
