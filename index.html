@@ -241,7 +241,9 @@
                                 <th class="p-3 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="allUsersTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody>
+                        <tbody id="allUsersTableBody" class="divide-y divide-slate-700/50 text-sm">
+                            <tr><td colspan="7" class="text-center p-4 text-slate-500">Loading system users...</td></tr>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -259,7 +261,6 @@
                     </div>
                 </div>
 
-                <!-- Expanded 7 Report Navigation Tabs -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 bg-slate-900/60 p-2 rounded-xl border border-slate-700/50">
                     <button onclick="loadReport('sales')" id="tab-sales" class="report-tab py-2 text-[11px] font-bold rounded-lg text-white bg-indigo-600">Sales Report</button>
                     <button onclick="loadReport('stocks')" id="tab-stocks" class="report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Stock Report</button>
@@ -270,7 +271,6 @@
                     <button onclick="loadReport('customer')" id="tab-customer" class="report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Customer Report</button>
                 </div>
 
-                <!-- Date Range Inputs for Sales Report -->
                 <div id="dateFilterBox" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end bg-slate-900/40 p-3 rounded-xl border border-slate-700/30">
                     <div>
                         <label class="text-xs font-semibold text-slate-400 mb-1 block">Start Date</label>
@@ -283,7 +283,6 @@
                     <button onclick="loadReport('sales')" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold">Filter Data</button>
                 </div>
 
-                <!-- PRINTABLE REPORT CONTAINER -->
                 <div id="printableReport" class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4">
                     <div class="mb-4 text-center hidden print:block">
                         <h1 class="text-2xl font-bold">StockFlow ERP System Report</h1>
@@ -295,7 +294,6 @@
                     </table>
                 </div>
 
-                <!-- REPORT PAGINATION -->
                 <div id="reportPaginationControls" class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700/50">
                     <span id="reportPageInfo">Page 1 of 1</span>
                     <div class="flex gap-2">
@@ -560,15 +558,22 @@
             } catch (err) { console.error('Error loading stats:', err); }
         }
 
+        // 👥 FIXED LOAD USERS MANAGEMENT FUNCTION (SAFE RENDERING)
         async function loadUsersManagement() {
+            const tbody = document.getElementById('allUsersTableBody');
             try {
                 const res = await fetch(`${API_BASE}/admin/all-users`);
                 const users = await res.json();
-                const tbody = document.getElementById('allUsersTableBody');
                 tbody.innerHTML = '';
+
+                if (!Array.isArray(users) || users.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-slate-500">No users found in database.</td></tr>`;
+                    return;
+                }
 
                 users.forEach(u => {
                     const loginTimeStr = formatDateTime(u.updated_at || u.created_at);
+                    const safeName = (u.name || 'User').replace(/'/g, "\\'");
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-700/30">
                             <td class="p-3 font-semibold">${u.name}</td>
@@ -578,14 +583,17 @@
                             <td class="p-3"><span class="${u.is_approved ? 'text-emerald-400' : 'text-amber-400'} font-bold text-xs">${u.is_approved ? 'Approved' : 'Pending'}</span></td>
                             <td class="p-3 text-xs text-slate-300 font-mono"><i class="fa-solid fa-clock text-indigo-400 mr-1"></i>${loginTimeStr}</td>
                             <td class="p-3 text-right">
-                                <button onclick="openManageUserModal(${u.id}, '${u.role}', ${u.is_approved}, '${u.currency}')" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg" title="Edit Role & Approval"><i class="fa-solid fa-user-pen"></i></button>
-                                <button onclick="openChangePasswordModal(${u.id}, '${u.name.replace(/'/g, "\\'")}')" class="text-amber-400 hover:bg-amber-500/10 p-1.5 rounded-lg ml-1" title="Change Password"><i class="fa-solid fa-key"></i></button>
+                                <button onclick="openManageUserModal(${u.id}, '${u.role}', ${u.is_approved}, '${u.currency || 'USD'}')" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg" title="Edit Role & Approval"><i class="fa-solid fa-user-pen"></i></button>
+                                <button onclick="openChangePasswordModal(${u.id}, '${safeName}')" class="text-amber-400 hover:bg-amber-500/10 p-1.5 rounded-lg ml-1" title="Change Password"><i class="fa-solid fa-key"></i></button>
                                 <button onclick="deleteUser(${u.id})" class="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg ml-1" title="Delete User"><i class="fa-solid fa-trash"></i></button>
                             </td>
                         </tr>
                     `;
                 });
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error('User Loading Error:', err); 
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center p-4 text-rose-400">Failed to load users from server.</td></tr>`;
+            }
         }
 
         async function openManageUserModal(id, currentRole, currentApproved, currentCurrency) {
@@ -694,7 +702,6 @@
             }
         }
 
-        // 📊 EXPANDED REPORTS CONTROLLER (HANDLES ALL 7 TABS)
         async function loadReport(type) {
             activeReportType = type;
             reportCurrentPage = 1;

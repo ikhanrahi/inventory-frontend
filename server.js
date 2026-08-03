@@ -138,6 +138,7 @@ app.get('/api/admin/all-users', async (req, res) => {
         const result = await db.query('SELECT id, name, email, role, currency, is_approved, created_at, updated_at FROM users ORDER BY id DESC');
         res.json(result.rows);
     } catch (err) {
+        console.error('Fetch All Users Error:', err.message);
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 });
@@ -259,7 +260,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 🛒 SALES & ADVANCED REPORTING ENGINE
+// 🛒 SALES & REPORTS
 // -------------------------------------------------------------
 
 app.post('/api/sales', async (req, res) => {
@@ -321,7 +322,6 @@ app.get('/api/admin/analytics', async (req, res) => {
     }
 });
 
-// 📊 EXPANDED REPORTS ROUTE
 app.get('/api/admin/reports/:type', async (req, res) => {
     const { type } = req.params;
     const { startDate, endDate } = req.query;
@@ -349,11 +349,9 @@ app.get('/api/admin/reports/:type', async (req, res) => {
             query = `SELECT id, name, sku, category, brand, supplier, location, expiry_date, price, cost_price, quantity FROM products ORDER BY quantity ASC`;
         }
         else if (type === 'lowstock') {
-            // 📉 Low Stock / Out of Stock Report
             query = `SELECT id, name, sku, category, brand, supplier, location, price, quantity FROM products WHERE quantity <= 5 ORDER BY quantity ASC`;
         }
         else if (type === 'supplier') {
-            // 🏢 Supplier / Brand Summary Report
             query = `
                 SELECT COALESCE(supplier, 'N/A') as supplier, COALESCE(brand, 'Generic') as brand, 
                        COUNT(*) as total_products, SUM(quantity) as total_stock, SUM(cost_price * quantity) as total_cost_value 
