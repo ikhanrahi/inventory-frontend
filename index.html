@@ -6,6 +6,8 @@
     <title>Inventory Management System</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2pdf Library for Invoice Generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
@@ -254,31 +256,40 @@
         }
 
         // Load Orders for Logged-In Customer
-        async function loadCustomerOrders(customerId) {
-            const res = await fetch(`${API_BASE}/sales/customer/${customerId}`);
-            const orders = await res.json();
+        // Load Orders for Logged-In Customer
+async function loadCustomerOrders(customerId) {
+    const res = await fetch(`${API_BASE}/sales/customer/${customerId}`);
+    const orders = await res.json();
 
-            const tbody = document.getElementById('ordersTableBody');
-            tbody.innerHTML = '';
+    const tbody = document.getElementById('ordersTableBody');
+    tbody.innerHTML = '';
 
-            if (orders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-400">No purchase history found.</td></tr>`;
-                return;
-            }
+    if (orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-400">No purchase history found.</td></tr>`;
+        return;
+    }
 
-            orders.forEach(o => {
-                const date = new Date(o.created_at).toLocaleDateString();
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50 text-sm">
-                        <td class="p-3 font-mono">#ORD-${o.sale_id}</td>
-                        <td class="p-3 font-semibold">${o.product_name}</td>
-                        <td class="p-3">${o.quantity} Pcs</td>
-                        <td class="p-3 text-green-600 font-bold">$${o.total_amount}</td>
-                        <td class="p-3 text-gray-500">${date}</td>
-                    </tr>
-                `;
-            });
-        }
+    orders.forEach(o => {
+        const date = new Date(o.created_at).toLocaleDateString();
+        // Object formatting for stringifying
+        const orderData = JSON.stringify(o).replace(/"/g, '&quot;');
+        
+        tbody.innerHTML += `
+            <tr class="border-b hover:bg-gray-50 text-sm">
+                <td class="p-3 font-mono">#ORD-${o.sale_id}</td>
+                <td class="p-3 font-semibold">${o.product_name}</td>
+                <td class="p-3">${o.quantity} Pcs</td>
+                <td class="p-3 text-green-600 font-bold">$${o.total_amount}</td>
+                <td class="p-3 text-gray-500">${date}</td>
+                <td class="p-3">
+                    <button onclick="downloadPDF(${orderData})" class="bg-gray-800 hover:bg-black text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                        📄 Invoice
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
 
         async function handleAddProduct(e) {
             e.preventDefault();
@@ -300,6 +311,79 @@
                 loadProducts(user);
             }
         }
+        // Function to generate and download PDF Invoice
+function downloadPDF(order) {
+    const user = JSON.parse(localStorage.getItem('user'));
+
+    // Populate Data into Invoice Template
+    document.getElementById('invDate').innerText = `Date: ${new Date(order.created_at).toLocaleDateString()}`;
+    document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
+    document.getElementById('invCustomerName').innerText = user.name;
+    document.getElementById('invProductName').innerText = order.product_name;
+    document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
+    document.getElementById('invUnitPrice').innerText = `$${order.unit_price}`;
+    document.getElementById('invTotal').innerText = `$${order.total_amount}`;
+
+    // Target the element
+    const element = document.getElementById('invoiceTemplate');
+    element.classList.remove('hidden'); // Temporarily unhide to capture
+
+    // PDF options
+    const opt = {
+        margin:       0.5,
+        filename:     `Invoice_ORD_${order.sale_id}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    // Generate PDF and then hide template again
+    html2pdf().set(opt).from(element).save().then(() => {
+        element.classList.add('hidden');
+    });
+}
     </script>
+    <!-- 🧾 INVOICE TEMPLATE (Hidden from UI, used only for PDF generation) -->
+<div id="invoiceTemplate" class="hidden p-8 bg-white text-gray-800 font-sans" style="width: 700px;">
+    <div class="flex justify-between items-center border-b pb-4 mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1>
+            <p class="text-sm text-gray-500">Enterprise Inventory ERP</p>
+        </div>
+        <div class="text-right">
+            <p id="invDate" class="text-sm text-gray-600"></p>
+            <p id="invNumber" class="font-bold font-mono text-gray-800"></p>
+        </div>
+    </div>
+
+    <div class="mb-6">
+        <h3 class="text-xs uppercase font-bold text-gray-400 mb-1">Billed To:</h3>
+        <p id="invCustomerName" class="font-semibold text-lg"></p>
+    </div>
+
+    <table class="w-full text-left border-collapse mb-6">
+        <thead>
+            <tr class="border-b-2 border-gray-200 bg-gray-50">
+                <th class="py-2 px-3 text-sm font-bold">Product Name</th>
+                <th class="py-2 px-3 text-sm font-bold text-center">Qty</th>
+                <th class="py-2 px-3 text-sm font-bold text-right">Unit Price</th>
+                <th class="py-2 px-3 text-sm font-bold text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="border-b">
+                <td id="invProductName" class="py-3 px-3"></td>
+                <td id="invQty" class="py-3 px-3 text-center"></td>
+                <td id="invUnitPrice" class="py-3 px-3 text-right"></td>
+                <td id="invTotal" class="py-3 px-3 text-right font-bold text-green-600"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="border-t pt-4 text-center text-xs text-gray-400">
+        <p>Thank you for your business!</p>
+        <p>Generated automatically via Enterprise Inventory System</p>
+    </div>
+</div>
 </body>
 </html>
