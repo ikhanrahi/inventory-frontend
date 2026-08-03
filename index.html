@@ -18,8 +18,8 @@
         #invoiceContainer { position: fixed; top: 0; left: 0; width: 700px; pointer-events: none; opacity: 0; z-index: -9999; }
         @media print {
             body * { visibility: hidden; }
-            #printableReport, #printableReport * { visibility: visible; }
-            #printableReport { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
+            #printableReport, #printableReport *, #posReceiptModal, #posReceiptModal * { visibility: visible; }
+            #printableReport, #posReceiptModal { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
         }
     </style>
 </head>
@@ -132,7 +132,10 @@
 
             <!-- 🧭 ADMIN NAVIGATION MENU TABS -->
             <div id="adminNavMenu" class="flex flex-wrap gap-2 bg-slate-800/90 border border-slate-700/60 p-2 rounded-2xl shadow-lg hidden">
-                <button onclick="switchAdminTab('inventory')" id="nav-inventory" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md flex items-center gap-2">
+                <button onclick="switchAdminTab('pos')" id="nav-pos" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-cash-register"></i> POS Billing
+                </button>
+                <button onclick="switchAdminTab('inventory')" id="nav-inventory" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2">
                     <i class="fa-solid fa-boxes-stacked"></i> Dashboard & Inventory
                 </button>
                 <button onclick="switchAdminTab('users')" id="nav-users" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2">
@@ -144,6 +147,60 @@
                 <button onclick="switchAdminTab('settings')" id="nav-settings" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2">
                     <i class="fa-solid fa-shield-halved"></i> Admin Settings
                 </button>
+            </div>
+
+            <!-- TAB 0: 🛒 POINT OF SALE (POS) BILLING TERMINAL -->
+            <div id="section-pos" class="admin-tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- POS Product Picker -->
+                <div class="lg:col-span-2 bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-barcode text-indigo-400"></i> Fast POS Scanner
+                        </h2>
+                        <span class="text-xs text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg">Auto-Barcode Scanner Active</span>
+                    </div>
+
+                    <div class="relative">
+                        <i class="fa-solid fa-barcode absolute left-3 top-3 text-slate-400 text-sm"></i>
+                        <input type="text" id="posBarcodeInput" onkeyup="handlePOSBarcodeScan(event)" placeholder="Scan Barcode / Type SKU or Name & Press Enter..." class="w-full bg-slate-900 border border-slate-700 pl-10 pr-4 py-2.5 rounded-xl text-xs text-slate-100 focus:border-indigo-500 focus:outline-none" autofocus>
+                    </div>
+
+                    <div class="overflow-y-auto max-h-96 pr-1">
+                        <div id="posGridContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+                    </div>
+                </div>
+
+                <!-- POS Cart & Checkout -->
+                <div class="bg-slate-800/90 border border-slate-700/60 p-6 rounded-2xl shadow-2xl flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-white mb-4 flex items-center justify-between border-b border-slate-700 pb-3">
+                            <span><i class="fa-solid fa-cart-shopping text-emerald-400 mr-2"></i>Current Order Cart</span>
+                            <button onclick="clearPOSCart()" class="text-xs text-rose-400 hover:text-rose-300">Clear</button>
+                        </h2>
+
+                        <div class="overflow-y-auto max-h-64 space-y-2 text-xs mb-4" id="posCartItems">
+                            <p class="text-slate-500 text-center py-8">Cart is empty. Scan product barcode or select item.</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-700/80 pt-4 space-y-3">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-400">Select Payment Method:</span>
+                            <select id="posPaymentMethod" class="bg-slate-900 border border-slate-700 text-xs text-emerald-400 px-2 py-0.5 rounded-lg font-bold">
+                                <option value="Cash">Cash</option>
+                                <option value="Card">Card</option>
+                                <option value="Bkash">Bkash</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-between items-center text-sm font-bold text-white">
+                            <span>Total Amount:</span>
+                            <span id="posCartGrandTotal" class="text-xl text-emerald-400 font-mono">0.00</span>
+                        </div>
+                        <button onclick="executePOSCheckout()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-xs shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-print"></i> Complete Checkout & Print Receipt
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB 1: DASHBOARD & INVENTORY SECTION -->
@@ -363,6 +420,7 @@
         let reportCurrentPage = 1;
         const reportRowsPerPage = 5;
 
+        let posCart = [];
         let actualAdminPasscode = '';
         let isPasscodeRevealed = false;
 
@@ -466,6 +524,7 @@
             document.getElementById(`section-${tabName}`).classList.remove('hidden');
             document.getElementById(`nav-${tabName}`).className = 'nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md flex items-center gap-2';
 
+            if (tabName === 'pos') renderPOSProductGrid();
             if (tabName === 'users') loadUsersManagement();
             if (tabName === 'reports') loadReport(activeReportType);
             if (tabName === 'settings') fetchAdminPasscode();
@@ -488,7 +547,7 @@
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('analyticsSection').classList.remove('hidden');
                 loadAnalytics();
-                switchAdminTab('inventory');
+                switchAdminTab('pos');
             } else {
                 document.getElementById('section-inventory').classList.remove('hidden');
                 document.getElementById('customerOrdersPanel').classList.remove('hidden');
@@ -496,6 +555,172 @@
             }
 
             loadProducts(user);
+        }
+
+        // 🛒 POS TERMINAL LOGIC & AUTO BARCODE SCANNER
+        function renderPOSProductGrid() {
+            const grid = document.getElementById('posGridContainer');
+            const user = JSON.parse(localStorage.getItem('user'));
+            const sym = getCurrencySymbol(user.currency);
+            grid.innerHTML = '';
+
+            allProducts.forEach(p => {
+                grid.innerHTML += `
+                    <div onclick="addToPOSCart(${p.id})" class="bg-slate-900/90 border border-slate-700/80 p-3 rounded-xl cursor-pointer hover:border-indigo-500 hover:scale-[1.02] transition-all">
+                        <span class="text-[9px] font-mono text-indigo-400 block">${p.sku}</span>
+                        <h4 class="font-bold text-xs text-slate-100 truncate">${p.name}</h4>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-xs font-black text-emerald-400">${sym}${p.price}</span>
+                            <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">${p.quantity} Pcs</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function handlePOSBarcodeScan(e) {
+            if (e.key === 'Enter') {
+                const query = e.target.value.trim().toLowerCase();
+                const matched = allProducts.find(p => p.sku.toLowerCase() === query || p.name.toLowerCase().includes(query));
+                if (matched) {
+                    addToPOSCart(matched.id);
+                    e.target.value = '';
+                } else {
+                    showToast('Product or Barcode not found!', 'error');
+                }
+            }
+        }
+
+        function addToPOSCart(prodId) {
+            const prod = allProducts.find(p => p.id === prodId);
+            if (!prod || prod.quantity <= 0) return showToast('Out of stock!', 'error');
+
+            const exist = posCart.find(c => c.product_id === prodId);
+            if (exist) {
+                if (exist.quantity + 1 > prod.quantity) return showToast('Max stock limit reached!', 'error');
+                exist.quantity += 1;
+            } else {
+                posCart.push({ product_id: prodId, name: prod.name, price: prod.price, quantity: 1 });
+            }
+            renderPOSCart();
+        }
+
+        function updatePOSCartQty(prodId, delta) {
+            const item = posCart.find(c => c.product_id === prodId);
+            const prod = allProducts.find(p => p.id === prodId);
+            if (!item) return;
+
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                posCart = posCart.filter(c => c.product_id !== prodId);
+            } else if (item.quantity > prod.quantity) {
+                item.quantity -= delta;
+                showToast('Stock limit exceeded!', 'error');
+            }
+            renderPOSCart();
+        }
+
+        function clearPOSCart() { posCart = []; renderPOSCart(); }
+
+        function renderPOSCart() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const sym = getCurrencySymbol(user.currency);
+            const container = document.getElementById('posCartItems');
+            container.innerHTML = '';
+            let total = 0;
+
+            if (posCart.length === 0) {
+                container.innerHTML = `<p class="text-slate-500 text-center py-8">Cart is empty. Scan product barcode or select item.</p>`;
+                document.getElementById('posCartGrandTotal').innerText = `${sym}0.00`;
+                return;
+            }
+
+            posCart.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+                container.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-900/80 p-2 rounded-xl border border-slate-700/60">
+                        <div>
+                            <p class="font-bold text-slate-100">${item.name}</p>
+                            <span class="text-[10px] text-emerald-400 font-mono">${sym}${item.price} each</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="updatePOSCartQty(${item.product_id}, -1)" class="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-lg font-bold hover:bg-slate-700">-</button>
+                            <span class="font-bold text-white">${item.quantity}</span>
+                            <button onclick="updatePOSCartQty(${item.product_id}, 1)" class="bg-slate-800 text-slate-200 px-2 py-0.5 rounded-lg font-bold hover:bg-slate-700">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('posCartGrandTotal').innerText = `${sym}${total.toFixed(2)}`;
+        }
+
+        async function executePOSCheckout() {
+            if (posCart.length === 0) return showToast('Cart is empty!', 'error');
+            const user = JSON.parse(localStorage.getItem('user'));
+            const payMethod = document.getElementById('posPaymentMethod').value;
+
+            try {
+                const res = await fetch(`${API_BASE}/pos/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customer_id: user.id,
+                        cart_items: posCart,
+                        payment_method: payMethod
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('POS Receipt Generated!', 'success');
+                    printThermalPOSReceipt(data.saleId, posCart, data.totalAmount, payMethod, user);
+                    posCart = [];
+                    renderPOSCart();
+                    loadProducts(user);
+                    loadAnalytics();
+                } else showToast(data.message || 'Checkout failed', 'error');
+            } catch (err) { showToast('POS System Error!', 'error'); }
+        }
+
+        function printThermalPOSReceipt(saleId, items, total, payMethod, user) {
+            const sym = getCurrencySymbol(user.currency);
+            let itemsHtml = items.map(i => `<tr><td style="padding: 2px 0;">${i.name} x${i.quantity}</td><td style="text-align: right; padding: 2px 0;">${sym}${(i.price * i.quantity).toFixed(2)}</td></tr>`).join('');
+
+            const receiptWindow = window.open('', '', 'width=300,height=600');
+            receiptWindow.document.write(`
+                <html>
+                <head>
+                    <title>POS Receipt #ORD-${saleId}</title>
+                    <style>
+                        body { font-family: monospace; font-size: 11px; width: 260px; margin: 0 auto; padding: 10px; }
+                        .text-center { text-align: center; }
+                        .border-b { border-bottom: 1px dashed #000; margin: 6px 0; }
+                        table { width: 100%; border-collapse: collapse; }
+                    </style>
+                </head>
+                <body>
+                    <div class="text-center">
+                        <h2 style="margin: 0;">StockFlow ERP</h2>
+                        <p style="margin: 2px 0;">POS Counter Receipt</p>
+                        <p style="margin: 2px 0;">Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</p>
+                        <p style="margin: 2px 0;">Order #: ORD-${saleId}</p>
+                    </div>
+                    <div class="border-b"></div>
+                    <table>${itemsHtml}</table>
+                    <div class="border-b"></div>
+                    <table>
+                        <tr><td><strong>TOTAL:</strong></td><td style="text-align: right;"><strong>${sym}${total.toFixed(2)}</strong></td></tr>
+                        <tr><td>Paid via:</td><td style="text-align: right;">${payMethod}</td></tr>
+                    </table>
+                    <div class="border-b"></div>
+                    <div class="text-center"><p>Thank you for shopping with us!</p></div>
+                </body>
+                </html>
+            `);
+            receiptWindow.document.close();
+            receiptWindow.print();
         }
 
         async function fetchAdminPasscode() {
@@ -558,7 +783,6 @@
             } catch (err) { console.error('Error loading stats:', err); }
         }
 
-        // 👥 FIXED LOAD USERS MANAGEMENT FUNCTION (SAFE RENDERING)
         async function loadUsersManagement() {
             const tbody = document.getElementById('allUsersTableBody');
             try {
@@ -784,6 +1008,7 @@
             const res = await fetch(`${API_BASE}/products`);
             allProducts = await res.json();
             renderProductTable(allProducts, user);
+            renderPOSProductGrid();
         }
 
         function renderProductTable(products, user) {

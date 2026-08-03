@@ -76,7 +76,6 @@ app.post('/api/auth/login', async (req, res) => {
 
         const loginTime = new Date().toISOString();
 
-        // Safe timestamp update (prevents crash if updated_at is missing)
         try {
             await db.query('UPDATE users SET updated_at = $1 WHERE id = $2', [loginTime, user.id]);
         } catch (e) {
@@ -266,8 +265,52 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 🛒 SALES & REPORTS
+// 🛒 MULTI-ITEM POS CHECKOUT & SALES
 // -------------------------------------------------------------
+
+app.post('/api/pos/checkout', async (req, res) => {
+    const { customer_id, cart_items, payment_method } = req.body;
+    if (!cart_items || cart_items.length === 0) return res.status(400).json({ message: 'Cart is empty!' });
+
+    try {
+        const pMethod = payment_method || 'Cash';
+        let grandTotal = 0;
+
+        // Calculate total & verify stock
+        for (const item of cart_items) {
+            const prodRes = await db.query('SELECT * FROM products WHERE id = $1', [item.product_id]);
+            if (prodRes.rows.length === 0) return res.status(404).json({ message: `Product ID ${item.product_id} not found!` });
+            
+            const prod = prodRes.rows[0];
+            if (prod.quantity < item.quantity) {
+                return res.status(400).json({ message: `Insufficient stock for ${prod.name}! Only ${prod.quantity} available.` });
+            }
+            grandTotal += prod.price * item.quantity;
+        }
+
+        // Insert sale
+        const saleRes = await db.query(
+            'INSERT INTO sales (customer_id, total_amount, payment_status, payment_method) VALUES ($1, $2, $3, $4) RETURNING id',
+            [customer_id || null, grandTotal, 'PAID', pMethod]
+        );
+        const saleId = saleRes.rows[0].id;
+
+        // Insert sale items & deduct stock
+        for (const item of cart_items) {
+            const prodRes = await db.query('SELECT * FROM products WHERE id = $1', [item.product_id]);
+            const prod = prodRes.rows[0];
+            const newStock = prod.quantity - item.quantity;
+
+            await db.query('INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)', [saleId, item.product_id, item.quantity, prod.price]);
+            await db.query('UPDATE products SET quantity = $1 WHERE id = $2', [newStock, item.product_id]);
+        }
+
+        res.status(201).json({ message: 'POS Transaction completed successfully!', saleId, totalAmount: grandTotal });
+    } catch (err) {
+        console.error('POS Checkout Error:', err.message);
+        res.status(500).json({ error: 'POS Transaction failed' });
+    }
+});
 
 app.post('/api/sales', async (req, res) => {
     const { customer_id, product_id, quantity, payment_method } = req.body;
