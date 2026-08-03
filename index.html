@@ -156,7 +156,7 @@
                 </div>
             </div>
 
-            <!-- 📈 ADMIN ONLY: Sales Report Section with Live Table & Pagination -->
+            <!-- 📈 ADMIN ONLY: Sales Report Section -->
             <div id="reportSection" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
@@ -170,11 +170,11 @@
                 <!-- Date Range Inputs -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <div>
-                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Start Date (Optional)</label>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Start Date</label>
                         <input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-xl text-xs text-slate-200">
                     </div>
                     <div>
-                        <label class="text-xs font-semibold text-slate-400 mb-1 block">End Date (Optional)</label>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">End Date</label>
                         <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-xl text-xs text-slate-200">
                     </div>
                     <button onclick="fetchSalesReport()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold transition-all">
@@ -182,8 +182,8 @@
                     </button>
                 </div>
 
-                <!-- 📊 Live Report Table (10 items per page) -->
-                <div class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4">
+                <!-- 📊 Live Report Table (Hidden by default, shows ONLY after filtering dates) -->
+                <div id="reportTableContainer" class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4 hidden">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
@@ -196,17 +196,16 @@
                             </tr>
                         </thead>
                         <tbody id="reportTableBody" class="divide-y divide-slate-700/50 text-xs">
-                            <tr><td colspan="6" class="text-center p-4 text-slate-500">Click "Filter Report Data" to load report.</td></tr>
                         </tbody>
                     </table>
-                </div>
 
-                <!-- Pagination Controls -->
-                <div id="reportPagination" class="flex justify-between items-center text-xs text-slate-400 pt-2 hidden">
-                    <span id="pageInfo">Page 1 of 1</span>
-                    <div class="flex gap-2">
-                        <button onclick="changeReportPage(-1)" id="btnPrevPage" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg disabled:opacity-50">Previous</button>
-                        <button onclick="changeReportPage(1)" id="btnNextPage" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg disabled:opacity-50">Next</button>
+                    <!-- Pagination Controls -->
+                    <div id="reportPagination" class="flex justify-between items-center text-xs text-slate-400 pt-3">
+                        <span id="pageInfo">Page 1 of 1</span>
+                        <div class="flex gap-2">
+                            <button onclick="changeReportPage(-1)" id="btnPrevPage" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg disabled:opacity-50">Previous</button>
+                            <button onclick="changeReportPage(1)" id="btnNextPage" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg disabled:opacity-50">Next</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -393,7 +392,6 @@
                 document.getElementById('analyticsSection').classList.remove('hidden');
                 document.getElementById('reportSection').classList.remove('hidden');
                 loadAnalytics();
-                fetchSalesReport();
             } else {
                 document.getElementById('customerOrdersPanel').classList.remove('hidden');
                 loadCustomerOrders(user.id);
@@ -415,24 +413,29 @@
             }
         }
 
-        // 🟢 LIVE TABLE REPORT WITH 10 RECORDS PAGINATION
+        // 🟢 SHOWS TABLE ONLY UPON FILTERING
         async function fetchSalesReport() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
 
-            let url = `${API_BASE}/admin/sales-report`;
-            if (start && end) {
-                url += `?startDate=${start}&endDate=${end}`;
+            if (!start || !end) {
+                showToast('Please select both Start Date and End Date!', 'warning');
+                return;
             }
+
+            let url = `${API_BASE}/admin/sales-report?startDate=${start}&endDate=${end}`;
 
             try {
                 const res = await fetch(url);
                 currentReportData = await res.json();
                 currentPage = 1;
+                
+                // Show table container only when filtered
+                document.getElementById('reportTableContainer').classList.remove('hidden');
                 renderReportTable();
 
                 if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
-                    showToast('No sales records found', 'info');
+                    showToast('No sales records found for this period', 'info');
                 } else {
                     showToast(`Loaded ${currentReportData.length} sales record(s)!`, 'success');
                 }
@@ -444,16 +447,16 @@
 
         function renderReportTable() {
             const tbody = document.getElementById('reportTableBody');
-            const paginationDiv = document.getElementById('reportPagination');
             tbody.innerHTML = '';
 
             if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-500">No sales records found.</td></tr>`;
-                paginationDiv.classList.add('hidden');
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-500">No sales records found for selected dates.</td></tr>`;
+                document.getElementById('pageInfo').innerText = `Page 0 of 0`;
+                document.getElementById('btnPrevPage').disabled = true;
+                document.getElementById('btnNextPage').disabled = true;
                 return;
             }
 
-            paginationDiv.classList.remove('hidden');
             const totalPages = Math.ceil(currentReportData.length / rowsPerPage);
             const startIdx = (currentPage - 1) * rowsPerPage;
             const paginatedData = currentReportData.slice(startIdx, startIdx + rowsPerPage);
@@ -484,7 +487,7 @@
 
         function exportToCSV() {
             if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
-                showToast('No sales records found to export!', 'warning');
+                showToast('Please filter by date range first to download CSV!', 'warning');
                 return;
             }
 
@@ -685,7 +688,7 @@
             }
         }
 
-        // 📱 100% FIXED PDF GENERATOR (In-DOM Visible Snapshot)
+        // 📱 FIXED PDF GENERATOR (In-DOM Rendered Container)
         async function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
 
@@ -701,7 +704,6 @@
 
             showToast('Generating Invoice PDF...', 'info');
 
-            // Wait 200ms to allow mobile browsers to finish text layout
             await new Promise(resolve => setTimeout(resolve, 200));
 
             const opt = {
