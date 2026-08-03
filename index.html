@@ -492,7 +492,7 @@
             }
         }
 
-        // 🔑 OPEN CHANGE PASSWORD MODAL FUNCTION
+        // 🔑 IMPROVED CHANGE PASSWORD MODAL FUNCTION
         async function openChangePasswordModal(userId, userName) {
             const { value: newPassword } = await Swal.fire({
                 title: `Change Password for ${userName}`,
@@ -527,11 +527,12 @@
 
                     const data = await res.json();
                     if (res.ok) {
-                        showToast(data.message, 'success');
+                        showToast(data.message || 'Password updated successfully!', 'success');
                     } else {
                         showToast(data.message || 'Failed to change password', 'error');
                     }
                 } catch (err) {
+                    console.error('Password reset network error:', err);
                     showToast('Server Connection Error!', 'error');
                 }
             }

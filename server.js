@@ -73,9 +73,6 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(403).json({ message: 'Your account is pending Admin approval.' });
         }
 
-        // Update Last Login / Active Status
-        await db.query('UPDATE users SET updated_at = NOW() WHERE id = $1', [user.id]);
-
         const token = jwt.sign({ id: user.id, name: user.name, role: user.role }, process.env.JWT_SECRET || 'secretkey', { expiresIn: '1d' });
         res.json({ 
             message: 'Login successful!', 
@@ -89,7 +86,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 👥 ADMIN USER MANAGEMENT & USER STATS
+// 👥 ADMIN USER MANAGEMENT & PASSWORD RESET
 // -------------------------------------------------------------
 
 app.get('/api/admin/users-stats', async (req, res) => {
@@ -127,6 +124,35 @@ app.put('/api/admin/manage-user/:id', async (req, res) => {
         res.json({ message: 'User updated successfully!' });
     } catch (err) {
         res.status(500).json({ error: 'Failed to update user' });
+    }
+});
+
+// 🔑 SAFE ADMIN CHANGE PASSWORD ROUTE
+app.put('/api/admin/change-password/:id', async (req, res) => {
+    const { newPassword } = req.body;
+    const userId = req.params.id;
+
+    if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters long!' });
+    }
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        const result = await db.query(
+            'UPDATE users SET password = $1 WHERE id = $2 RETURNING id, name, email',
+            [hashedPassword, userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'User not found!' });
+        }
+
+        res.json({ message: `Password updated successfully for ${result.rows[0].name}!` });
+    } catch (err) {
+        console.error('Change Password Error:', err.message);
+        res.status(500).json({ error: 'Failed to update password' });
     }
 });
 
@@ -191,7 +217,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 🛒 SALES & ADVANCED REPORTS
+// 🛒 SALES & REPORTS
 // -------------------------------------------------------------
 
 app.post('/api/sales', async (req, res) => {
@@ -245,7 +271,6 @@ app.get('/api/admin/analytics', async (req, res) => {
     }
 });
 
-// 📊 COMPREHENSIVE REPORTS ENGINE (Sales, Stock, Profit, Category, Customer)
 app.get('/api/admin/reports/:type', async (req, res) => {
     const { type } = req.params;
     const { startDate, endDate } = req.query;
