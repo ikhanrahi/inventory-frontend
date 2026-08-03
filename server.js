@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-// Render dynamic port assign করে, তাই process.env.PORT ব্যবহার করতে হয়
+
+// Render Dynamic Port ব্যবহার করে, তাই process.env.PORT দেওয়া বাধ্যতামূলক
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({ origin: '*' }));
@@ -39,6 +40,7 @@ app.post('/api/products', (req, res) => {
     res.status(201).json({ message: 'Product added successfully', product: newProduct });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// 0.0.0.0 যোগ করা হয়েছে যাতে Render ব্যাকএন্ড সার্ভারকে চিনতে পারে
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
 });
