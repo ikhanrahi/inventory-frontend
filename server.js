@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 const db = require('./db');
 
@@ -12,6 +13,52 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
+
+// 📧 NODEMAILER EMAIL TRANSPORTER CONFIGURATION
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
+});
+
+// Helper function to send low stock alert emails
+async function checkAndSendLowStockAlert(productId) {
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+
+    try {
+        const res = await db.query('SELECT * FROM products WHERE id = $1', [productId]);
+        if (res.rows.length === 0) return;
+
+        const product = res.rows[0];
+        if (product.quantity <= 5) {
+            const mailOptions = {
+                from: `"StockFlow ERP Alert" <${process.env.EMAIL_USER}>`,
+                to: process.env.EMAIL_USER, // Sends alert to Admin Email
+                subject: `⚠️ LOW STOCK ALERT: ${product.name} (${product.quantity} Pcs Left)`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0f172a; color: #f8fafc; border-radius: 10px;">
+                        <h2 style="color: #f43f5e;">⚠️ Low Stock Inventory Alert</h2>
+                        <p>The following item in your inventory has reached a critical stock level:</p>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; color: #f8fafc;">
+                            <tr style="background-color: #1e293b;"><td style="padding: 8px;"><strong>Product Name:</strong></td><td style="padding: 8px;">${product.name}</td></tr>
+                            <tr style="background-color: #0f172a;"><td style="padding: 8px;"><strong>SKU / Barcode:</strong></td><td style="padding: 8px;">${product.sku}</td></tr>
+                            <tr style="background-color: #1e293b;"><td style="padding: 8px;"><strong>Category:</strong></td><td style="padding: 8px;">${product.category || 'General'}</td></tr>
+                            <tr style="background-color: #0f172a;"><td style="padding: 8px;"><strong>Remaining Stock:</strong></td><td style="padding: 8px; font-weight: bold; color: #f43f5e;">${product.quantity} Pcs</td></tr>
+                            <tr style="background-color: #1e293b;"><td style="padding: 8px;"><strong>Warehouse Location:</strong></td><td style="padding: 8px;">${product.location || 'Main Stock'}</td></tr>
+                        </table>
+                        <p style="margin-top: 20px; font-size: 12px; color: #94a3b8;">Please reorder stock soon to avoid running out of inventory.</p>
+                    </div>
+                `
+            };
+            await transporter.sendMail(mailOptions);
+            console.log(`📧 Low stock email alert sent for: ${product.name}`);
+        }
+    } catch (err) {
+        console.error('Email Notification Error:', err.message);
+    }
+}
 
 app.get('/', (req, res) => {
     res.send('🚀 Enterprise Inventory System API is Running!');
@@ -248,6 +295,10 @@ app.put('/api/products/:id', async (req, res) => {
                 expiry_date || null, quantity || 0, req.params.id
             ]
         );
+
+        // Trigger low stock check
+        checkAndSendLowStockAlert(req.params.id);
+
         res.json({ message: 'Product updated successfully!', product: result.rows[0] });
     } catch (err) {
         console.error('Update Product Error:', err.message);
@@ -265,7 +316,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 🛒 MULTI-ITEM POS CHECKOUT & SALES
+// 🛒 MULTI-ITEM POS CHECKOUT & SALES (WITH EMAIL ALERT)
 // -------------------------------------------------------------
 
 app.post('/api/pos/checkout', async (req, res) => {
@@ -276,7 +327,6 @@ app.post('/api/pos/checkout', async (req, res) => {
         const pMethod = payment_method || 'Cash';
         let grandTotal = 0;
 
-        // Calculate total & verify stock
         for (const item of cart_items) {
             const prodRes = await db.query('SELECT * FROM products WHERE id = $1', [item.product_id]);
             if (prodRes.rows.length === 0) return res.status(404).json({ message: `Product ID ${item.product_id} not found!` });
@@ -288,14 +338,12 @@ app.post('/api/pos/checkout', async (req, res) => {
             grandTotal += prod.price * item.quantity;
         }
 
-        // Insert sale
         const saleRes = await db.query(
             'INSERT INTO sales (customer_id, total_amount, payment_status, payment_method) VALUES ($1, $2, $3, $4) RETURNING id',
             [customer_id || null, grandTotal, 'PAID', pMethod]
         );
         const saleId = saleRes.rows[0].id;
 
-        // Insert sale items & deduct stock
         for (const item of cart_items) {
             const prodRes = await db.query('SELECT * FROM products WHERE id = $1', [item.product_id]);
             const prod = prodRes.rows[0];
@@ -303,6 +351,9 @@ app.post('/api/pos/checkout', async (req, res) => {
 
             await db.query('INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)', [saleId, item.product_id, item.quantity, prod.price]);
             await db.query('UPDATE products SET quantity = $1 WHERE id = $2', [newStock, item.product_id]);
+
+            // Trigger Email Alert for each item sold if stock becomes low
+            checkAndSendLowStockAlert(item.product_id);
         }
 
         res.status(201).json({ message: 'POS Transaction completed successfully!', saleId, totalAmount: grandTotal });
@@ -332,6 +383,9 @@ app.post('/api/sales', async (req, res) => {
         
         await db.query('INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)', [saleRes.rows[0].id, product_id, quantity, product.price]);
         await db.query('UPDATE products SET quantity = $1 WHERE id = $2', [newStock, product_id]);
+
+        // Trigger Email Alert
+        checkAndSendLowStockAlert(product_id);
 
         res.status(201).json({ message: 'Purchase completed successfully!', saleId: saleRes.rows[0].id });
     } catch (err) {

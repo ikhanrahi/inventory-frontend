@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Inventory ERP</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- SweetAlert2 for Professional Popups & Toasts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .swal2-popup { background: #1e293b !important; color: #f8fafc !important; border: 1px solid rgba(51, 65, 85, 0.6) !important; border-radius: 1rem !important; }
@@ -27,7 +23,6 @@
 
     <div class="container mx-auto p-4 sm:p-6 max-w-6xl">
         
-        <!-- HEADER -->
         <header class="flex justify-between items-center bg-slate-800/80 border border-slate-700/50 p-4 sm:p-6 rounded-2xl shadow-xl backdrop-blur-md mb-6">
             <div class="flex items-center gap-3">
                 <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
@@ -57,7 +52,6 @@
             </div>
         </header>
 
-        <!-- AUTH SECTION -->
         <div id="authSection" class="my-12 max-w-md mx-auto">
             <div class="bg-slate-800/90 border border-slate-700/60 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
                 <div class="text-center mb-8">
@@ -70,7 +64,6 @@
                     <button onclick="toggleAuth('register')" id="registerTabBtn" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200">Register</button>
                 </div>
 
-                <!-- Login Form -->
                 <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
                     <div>
                         <label class="text-xs font-semibold text-slate-400 mb-1 block">Email Address</label>
@@ -83,7 +76,6 @@
                     <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">Sign In</button>
                 </form>
 
-                <!-- Register Form -->
                 <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
                     <div>
                         <label class="text-xs font-semibold text-slate-400 mb-1 block">Full Name</label>
@@ -127,10 +119,8 @@
             </div>
         </div>
 
-        <!-- DASHBOARD SECTION -->
         <div id="dashboardSection" class="hidden space-y-6">
 
-            <!-- 🧭 ADMIN NAVIGATION MENU TABS -->
             <div id="adminNavMenu" class="flex flex-wrap gap-2 bg-slate-800/90 border border-slate-700/60 p-2 rounded-2xl shadow-lg hidden">
                 <button onclick="switchAdminTab('pos')" id="nav-pos" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md flex items-center gap-2">
                     <i class="fa-solid fa-cash-register"></i> POS Billing
@@ -149,9 +139,7 @@
                 </button>
             </div>
 
-            <!-- TAB 0: 🛒 POINT OF SALE (POS) BILLING TERMINAL -->
             <div id="section-pos" class="admin-tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- POS Product Picker -->
                 <div class="lg:col-span-2 bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-xl space-y-4">
                     <div class="flex justify-between items-center">
                         <h2 class="text-lg font-bold text-white flex items-center gap-2">
@@ -170,7 +158,6 @@
                     </div>
                 </div>
 
-                <!-- POS Cart & Checkout -->
                 <div class="bg-slate-800/90 border border-slate-700/60 p-6 rounded-2xl shadow-2xl flex flex-col justify-between">
                     <div>
                         <h2 class="text-lg font-bold text-white mb-4 flex items-center justify-between border-b border-slate-700 pb-3">
@@ -203,9 +190,7 @@
                 </div>
             </div>
 
-            <!-- TAB 1: DASHBOARD & INVENTORY SECTION -->
             <div id="section-inventory" class="admin-tab-content space-y-6">
-                <!-- ADMIN STATS CARDS -->
                 <div id="analyticsSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 hidden">
                     <div class="bg-slate-800/80 border border-slate-700/50 p-4 rounded-2xl">
                         <p class="text-[10px] font-bold text-slate-400 uppercase">Total Revenue</p>
@@ -229,7 +214,6 @@
                     </div>
                 </div>
 
-                <!-- ADMIN ONLY: Add Product Form -->
                 <div id="adminPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
                     <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-indigo-400"></i> Add New Stock Item</h2>
                     <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -252,7 +236,6 @@
                     </form>
                 </div>
 
-                <!-- PRODUCT LIST TABLE -->
                 <div class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-xl">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-box text-indigo-400"></i> Available Inventory Stock</h2>
@@ -280,7 +263,6 @@
                 </div>
             </div>
 
-            <!-- TAB 2: USER MANAGEMENT SECTION -->
             <div id="section-users" class="admin-tab-content bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
                 <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-users-gear text-indigo-400"></i> Manage All System Users & Admins
@@ -305,7 +287,6 @@
                 </div>
             </div>
 
-            <!-- TAB 3: EXPANDED ENTERPRISE REPORTS SECTION (7 TABS) -->
             <div id="section-reports" class="admin-tab-content bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
@@ -360,7 +341,6 @@
                 </div>
             </div>
 
-            <!-- TAB 4: ADMIN SETTINGS SECTION -->
             <div id="section-settings" class="admin-tab-content bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden max-w-xl">
                 <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
                     <i class="fa-solid fa-key text-amber-400"></i> Admin Registration Secret Passcode
@@ -388,7 +368,6 @@
                 </form>
             </div>
 
-            <!-- CUSTOMER PURCHASE HISTORY -->
             <div id="customerOrdersPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
                 <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-receipt text-indigo-400"></i> My Purchase History</h2>
                 <div class="overflow-x-auto">
