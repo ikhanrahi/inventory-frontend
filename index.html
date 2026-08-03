@@ -22,6 +22,16 @@
         .swal2-title {
             color: #f8fafc !important;
         }
+        /* Mobile-safe Invoice Rendering Positioning */
+        #invoiceTemplate {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 700px !important;
+            background: #ffffff !important;
+            color: #1e293b !important;
+            z-index: -9999;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
@@ -180,7 +190,7 @@
                 </h2>
                 <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <input type="text" id="pName" placeholder="Product Name" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
-                    <!-- SKU is now optional -->
+                    <!-- SKU is optional -->
                     <input type="text" id="pSku" placeholder="SKU / Barcode (Optional)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
                     <input type="number" id="pPrice" placeholder="Price ($)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
                     <input type="number" id="pQuantity" placeholder="Stock Qty" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
@@ -354,7 +364,7 @@
                 document.getElementById('analyticsSection').classList.remove('hidden');
                 document.getElementById('reportSection').classList.remove('hidden');
                 loadAnalytics();
-                fetchSalesReport(); // Auto load all-time sales on login
+                fetchSalesReport();
             } else {
                 document.getElementById('customerOrdersPanel').classList.remove('hidden');
                 loadCustomerOrders(user.id);
@@ -376,7 +386,6 @@
             }
         }
 
-        // 🟢 FIX 1: Filter report now works WITH or WITHOUT dates selected!
         async function fetchSalesReport() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
@@ -399,7 +408,6 @@
             }
         }
 
-        // 🟢 FIX 2: Mobile-Safe Download using Blob (Fixes Empty file bug on phones)
         function exportToCSV() {
             if (!currentReportData || currentReportData.length === 0) {
                 showToast('No sales records found to export!', 'warning');
@@ -419,7 +427,6 @@
 
             const csvString = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
             
-            // Mobile-compatible Blob download
             const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -575,7 +582,6 @@
             });
         }
 
-        // 🟢 FIX 3: SKU is now OPTIONAL! Auto generated if left blank.
         async function handleAddProduct(e) {
             e.preventDefault();
             const pName = document.getElementById('pName').value;
@@ -583,7 +589,6 @@
             const pPrice = document.getElementById('pPrice').value;
             const pQuantity = document.getElementById('pQuantity').value;
 
-            // If SKU is empty, auto-generate unique SKU
             if (!pSku || pSku.trim() === '') {
                 pSku = 'SKU-' + Math.floor(100000 + Math.random() * 900000);
             }
@@ -606,6 +611,7 @@
             }
         }
 
+        // 📱 Mobile-Safe Full-Page PDF Generator
         function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
 
@@ -618,25 +624,28 @@
             document.getElementById('invTotal').innerText = `$${order.total_amount}`;
 
             const element = document.getElementById('invoiceTemplate');
-            element.classList.remove('hidden');
 
             const opt = {
-                margin: 0.5,
-                filename: `Invoice_ORD_${order.sale_id}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+                margin:       0.3,
+                filename:     `Invoice_ORD_${order.sale_id}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
+            showToast('Generating Invoice PDF...', 'info');
+
             html2pdf().set(opt).from(element).save().then(() => {
-                element.classList.add('hidden');
                 showToast('Invoice PDF downloaded!', 'success');
+            }).catch(err => {
+                console.error('PDF Error:', err);
+                showToast('Failed to download PDF', 'error');
             });
         }
     </script>
 
-    <!-- 🧾 INVOICE TEMPLATE -->
-    <div id="invoiceTemplate" class="hidden p-8 bg-white text-slate-800 font-sans" style="width: 700px;">
+    <!-- 🧾 INVOICE TEMPLATE (Optimized for Mobile HTML2PDF Canvas) -->
+    <div id="invoiceTemplate" class="p-8 font-sans">
         <div class="flex justify-between items-center border-b pb-4 mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1>
@@ -650,23 +659,23 @@
 
         <div class="mb-6">
             <h3 class="text-xs uppercase font-bold text-slate-400 mb-1">Billed To:</h3>
-            <p id="invCustomerName" class="font-semibold text-lg"></p>
+            <p id="invCustomerName" class="font-semibold text-lg text-slate-800"></p>
         </div>
 
         <table class="w-full text-left border-collapse mb-6">
             <thead>
                 <tr class="border-b-2 border-slate-200 bg-slate-50">
-                    <th class="py-2 px-3 text-sm font-bold">Product Name</th>
-                    <th class="py-2 px-3 text-sm font-bold text-center">Qty</th>
-                    <th class="py-2 px-3 text-sm font-bold text-right">Unit Price</th>
-                    <th class="py-2 px-3 text-sm font-bold text-right">Total</th>
+                    <th class="py-2 px-3 text-sm font-bold text-slate-700">Product Name</th>
+                    <th class="py-2 px-3 text-sm font-bold text-center text-slate-700">Qty</th>
+                    <th class="py-2 px-3 text-sm font-bold text-right text-slate-700">Unit Price</th>
+                    <th class="py-2 px-3 text-sm font-bold text-right text-slate-700">Total</th>
                 </tr>
             </thead>
             <tbody>
                 <tr class="border-b">
-                    <td id="invProductName" class="py-3 px-3"></td>
-                    <td id="invQty" class="py-3 px-3 text-center"></td>
-                    <td id="invUnitPrice" class="py-3 px-3 text-right"></td>
+                    <td id="invProductName" class="py-3 px-3 text-slate-800"></td>
+                    <td id="invQty" class="py-3 px-3 text-center text-slate-800"></td>
+                    <td id="invUnitPrice" class="py-3 px-3 text-right text-slate-800"></td>
                     <td id="invTotal" class="py-3 px-3 text-right font-bold text-emerald-600"></td>
                 </tr>
             </tbody>

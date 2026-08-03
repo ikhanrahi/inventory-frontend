@@ -17,91 +17,47 @@ app.get('/', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 🔐 AUTHENTICATION ROUTES (Register & Login)
+// 🔐 AUTHENTICATION ROUTES
 // -------------------------------------------------------------
 
-// ২. ইউজার রেজিস্ট্রেশন API (Register)
 app.post('/api/auth/register', async (req, res) => {
     const { name, email, password, role } = req.body;
-
-    if (!name || !email || !password) {
-        return res.status(400).json({ message: 'Name, email, and password are required' });
-    }
+    if (!name || !email || !password) return res.status(400).json({ message: 'Name, email, and password required' });
 
     try {
-        // ইমেইল আগে থেকে আছে কিনা চেক করা
         const userExists = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (userExists.rows.length > 0) {
-            return res.status(400).json({ message: 'Email is already registered' });
-        }
+        if (userExists.rows.length > 0) return res.status(400).json({ message: 'Email is already registered' });
 
-        // পাসওয়ার্ড এনক্রিপ্ট / হ্যাশ করা
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-
-        // রোল সেট করা (ডিফল্ট CUSTOMER, তবে ADMIN ও দেওয়া যাবে)
         const userRole = role ? role.toUpperCase() : 'CUSTOMER';
 
-        // ডাটাবেজে ইউজার সেভ করা
         const newUser = await db.query(
             'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
             [name, email, hashedPassword, userRole]
         );
 
-        res.status(201).json({
-            message: 'User registered successfully!',
-            user: newUser.rows[0]
-        });
-
+        res.status(201).json({ message: 'User registered successfully!', user: newUser.rows[0] });
     } catch (err) {
-        console.error('Registration Error:', err.message);
         res.status(500).json({ error: 'Server error during registration' });
     }
 });
 
-// ৩. ইউজার লগইন API (Login)
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email and password are required' });
-    }
+    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     try {
-        // ইমেইল দিয়ে ইউজার খোঁজা
         const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (result.rows.length === 0) {
-            return res.status(400).json({ message: 'Invalid email or password' });
-        }
+        if (result.rows.length === 0) return res.status(400).json({ message: 'Invalid credentials' });
 
         const user = result.rows[0];
-
-        // পাসওয়ার্ড ম্যাচ করে কিনা চেক করা
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid email or password' });
-        }
+        if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-        // সিকিউর JWT টোকেন জেনারেট করা
-        const token = jwt.sign(
-            { id: user.id, name: user.name, role: user.role },
-            process.env.JWT_SECRET || 'secretkey',
-            { expiresIn: '1d' } // টোকেনটির মেয়াদ ১ দিন থাকবে
-        );
-
-        res.json({
-            message: 'Login successful!',
-            token: token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
-        });
-
+        const token = jwt.sign({ id: user.id, name: user.name, role: user.role }, process.env.JWT_SECRET || 'secretkey', { expiresIn: '1d' });
+        res.json({ message: 'Login successful!', token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
     } catch (err) {
-        console.error('Login Error:', err.message);
         res.status(500).json({ error: 'Server error during login' });
     }
 });
@@ -110,17 +66,16 @@ app.post('/api/auth/login', async (req, res) => {
 // 📦 PRODUCT ROUTES
 // -------------------------------------------------------------
 
-// ৪. সব প্রোডাক্ট লিস্ট
 app.get('/api/products', async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM products ORDER BY id DESC');
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: 'Database server error' });
+        res.status(500).json({ error: 'Database error' });
     }
 });
 
-// ৫. নতুন প্রোডাক্ট অ্যাড
+// 🟢 SKU is Optional! Auto-generates unique SKU if left empty.
 app.post('/api/products', async (req, res) => {
     let { name, sku, quantity, price } = req.body;
 
@@ -128,7 +83,6 @@ app.post('/api/products', async (req, res) => {
         return res.status(400).json({ message: 'Name and Price are required!' });
     }
 
-    // If SKU is empty, auto generate unique SKU
     if (!sku || sku.trim() === '') {
         sku = 'SKU-' + Math.floor(100000 + Math.random() * 900000);
     }
@@ -149,15 +103,12 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
-// 🛠️ ৬. প্রোডাক্ট ডিলিট API (Delete Product - Admin Only)
 app.delete('/api/products/:id', async (req, res) => {
-    const { id } = req.params;
     try {
-        await db.query('DELETE FROM products WHERE id = $1', [id]);
+        await db.query('DELETE FROM products WHERE id = $1', [req.params.id]);
         res.json({ message: 'Product deleted successfully!' });
     } catch (err) {
-        console.error('Delete Product Error:', err.message);
-        res.status(500).json({ error: 'Failed to delete product. It might be linked to sales history.' });
+        res.status(500).json({ error: 'Failed to delete product' });
     }
 });
 
@@ -165,67 +116,40 @@ app.delete('/api/products/:id', async (req, res) => {
 // 🛒 SALES & PURCHASE ROUTES
 // -------------------------------------------------------------
 
-// ১. কাস্টমারের কেনাকাটা/অর্ডার নেওয়ার API
 app.post('/api/sales', async (req, res) => {
     const { customer_id, product_id, quantity } = req.body;
-
-    if (!customer_id || !product_id || !quantity || quantity <= 0) {
-        return res.status(400).json({ message: 'Invalid order details!' });
-    }
+    if (!customer_id || !product_id || !quantity || quantity <= 0) return res.status(400).json({ message: 'Invalid order details' });
 
     try {
-        // ১. প্রোডাক্টের স্টক ও দাম ডাটাবেজ থেকে চেক করা
         const productRes = await db.query('SELECT * FROM products WHERE id = $1', [product_id]);
-        
-        if (productRes.rows.length === 0) {
-            return res.status(404).json({ message: 'Product not found!' });
-        }
+        if (productRes.rows.length === 0) return res.status(404).json({ message: 'Product not found' });
 
         const product = productRes.rows[0];
-
-        // ২. স্টকে পর্যাপ্ত মালামাল আছে কিনা চেক করা
-        if (product.quantity < quantity) {
-            return res.status(400).json({ message: `Only ${product.quantity} items available in stock!` });
-        }
+        if (product.quantity < quantity) return res.status(400).json({ message: `Only ${product.quantity} items available!` });
 
         const totalAmount = product.price * quantity;
+        const newStock = product.quantity - quantity;
 
-        // ৩. sales টেবিলে বিক্রির হিসাব যোগ করা
         const saleRes = await db.query(
             'INSERT INTO sales (customer_id, total_amount, payment_status) VALUES ($1, $2, $3) RETURNING id',
             [customer_id, totalAmount, 'PAID']
         );
 
-        const saleId = saleRes.rows[0].id;
-
-        // ৪. sale_items টেবিলে কোন প্রোডাক্ট কত পিস কেনা হলো তা সেভ করা
         await db.query(
             'INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)',
-            [saleId, product_id, quantity, product.price]
+            [saleRes.rows[0].id, product_id, quantity, product.price]
         );
 
-        // ৫. প্রোডাক্টের স্টক থেকে বিক্রি হওয়া পরিমাণ বিয়োগ করা (Stock Auto-Deduct)
-        await db.query(
-            'UPDATE products SET quantity = quantity - $1 WHERE id = $2',
-            [quantity, product_id]
-        );
+        // Update Stock
+        await db.query('UPDATE products SET quantity = $1 WHERE id = $2', [newStock, product_id]);
 
-        res.status(201).json({
-            message: 'Purchase completed successfully!',
-            saleId: saleId,
-            totalAmount: totalAmount
-        });
-
+        res.status(201).json({ message: 'Purchase completed successfully!', saleId: saleRes.rows[0].id, totalAmount });
     } catch (err) {
-        console.error('Purchase Error:', err.message);
-        res.status(500).json({ error: 'Server error during purchase process' });
+        res.status(500).json({ error: 'Purchase failed' });
     }
 });
 
-// ২. কাস্টমারের নিজস্ব অর্ডারের ইতিহাস (Order History) দেখার API
 app.get('/api/sales/customer/:id', async (req, res) => {
-    const customerId = req.params.id;
-
     try {
         const result = await db.query(`
             SELECT s.id as sale_id, s.total_amount, s.created_at, p.name as product_name, si.quantity, si.unit_price 
@@ -234,29 +158,21 @@ app.get('/api/sales/customer/:id', async (req, res) => {
             JOIN products p ON si.product_id = p.id
             WHERE s.customer_id = $1
             ORDER BY s.id DESC
-        `, [customerId]);
-
+        `, [req.params.id]);
         res.json(result.rows);
     } catch (err) {
-        console.error('Fetch Orders Error:', err.message);
         res.status(500).json({ error: 'Failed to fetch customer orders' });
     }
 });
 
-
 // -------------------------------------------------------------
-// 📊 ADMIN ANALYTICS ROUTES
+// 📊 REPORTS & ANALYTICS
 // -------------------------------------------------------------
 
 app.get('/api/admin/analytics', async (req, res) => {
     try {
-        // 1. মোট সেলস রেভিনিউ হিসাব করা
         const revenueRes = await db.query('SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM sales');
-        
-        // 2. মোট কত পিস আইটেম বিক্রি হয়েছে
         const itemsSoldRes = await db.query('SELECT COALESCE(SUM(quantity), 0) as total_items_sold FROM sale_items');
-
-        // 3. লো স্টক প্রোডাক্টের সংখ্যা (Quantity <= 5)
         const lowStockRes = await db.query('SELECT * FROM products WHERE quantity <= 5 ORDER BY quantity ASC');
 
         res.json({
@@ -266,18 +182,12 @@ app.get('/api/admin/analytics', async (req, res) => {
             lowStockProducts: lowStockRes.rows
         });
     } catch (err) {
-        console.error('Analytics Error:', err.message);
-        res.status(500).json({ error: 'Failed to fetch analytics data' });
+        res.status(500).json({ error: 'Failed to fetch analytics' });
     }
 });
 
-// -------------------------------------------------------------
-// 📈 SALES REPORT & CSV EXPORT ROUTE
-// -------------------------------------------------------------
-
 app.get('/api/admin/sales-report', async (req, res) => {
     const { startDate, endDate } = req.query;
-
     try {
         let query = `
             SELECT s.id as sale_id, u.name as customer_name, p.name as product_name, 
@@ -287,19 +197,16 @@ app.get('/api/admin/sales-report', async (req, res) => {
             JOIN sale_items si ON s.id = si.sale_id
             JOIN products p ON si.product_id = p.id
         `;
-
         const params = [];
         if (startDate && endDate) {
             query += ` WHERE s.created_at >= $1 AND s.created_at <= $2`;
             params.push(startDate, endDate + ' 23:59:59');
         }
-
         query += ` ORDER BY s.id DESC`;
 
         const result = await db.query(query, params);
         res.json(result.rows);
     } catch (err) {
-        console.error('Report Error:', err.message);
         res.status(500).json({ error: 'Failed to generate report' });
     }
 });
