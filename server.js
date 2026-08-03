@@ -2,29 +2,25 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-const PORT = 5000;
+// Render dynamic port assign করে, তাই process.env.PORT ব্যবহার করতে হয়
+const PORT = process.env.PORT || 5000;
 
-// ১. সকল অরিজিন সাপোর্ট করার জন্য CORS অপশন
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// ডাটাবেজের বিকল্প মেমোরি
 let inventory = [
     { id: 1, name: 'Laptop', quantity: 5, price: 1200 },
     { id: 2, name: 'Mouse', quantity: 20, price: 25 }
 ];
 
-// Home Route
 app.get('/', (req, res) => {
     res.send('Inventory API is running!');
 });
 
-// Route 1: Get all products
 app.get('/api/products', (req, res) => {
     res.json(inventory);
 });
 
-// Route 2: Add product
 app.post('/api/products', (req, res) => {
     const { name, quantity, price } = req.body;
 
@@ -44,5 +40,5 @@ app.post('/api/products', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
