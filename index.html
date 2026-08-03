@@ -3,104 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Management Dashboard</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; }
-        h1 { color: #333; }
-        .form-container, .table-container { background: #fff; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-        button { background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #218838; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #007bff; color: white; }
-    </style>
+    <title>Inventory Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <h1>📦 Inventory Management</h1>
+    <div class="container mx-auto p-6 max-w-5xl">
+        
+        <!-- HEADER -->
+        <header class="flex justify-between items-center bg-white p-6 rounded-lg shadow-md mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">📦 Inventory ERP</h1>
+            <div id="userInfo" class="hidden flex items-center gap-4">
+                <span id="userName" class="font-semibold text-blue-600"></span>
+                <span id="userRole" class="bg-gray-200 text-xs px-2 py-1 rounded uppercase font-bold"></span>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Logout</button>
+            </div>
+        </header>
 
-    <!-- Form to add a new product -->
-    <div class="form-container">
-        <h3>Add New Product</h3>
-        <input type="text" id="productName" placeholder="Product Name (e.g., Laptop)">
-        <input type="number" id="productQuantity" placeholder="Quantity (e.g., 10)">
-        <input type="number" id="productPrice" placeholder="Price (e.g., 500)">
-        <button onclick="addProduct()">Add Product</button>
+        <!-- 🔑 AUTH SECTION -->
+        <div id="authSection" class="bg-white p-8 rounded-lg shadow-md max-w-md mx-auto">
+            <div class="flex justify-around mb-6 border-b pb-2">
+                <button onclick="toggleAuth('login')" id="loginTabBtn" class="font-bold text-blue-600 border-b-2 border-blue-600 pb-1">Login</button>
+                <button onclick="toggleAuth('register')" id="registerTabBtn" class="font-bold text-gray-400 pb-1">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                <input type="email" id="loginEmail" placeholder="Email" class="w-full border p-2 rounded" required>
+                <input type="password" id="loginPassword" placeholder="Password" class="w-full border p-2 rounded" required>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold">Login</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                <input type="text" id="regName" placeholder="Full Name" class="w-full border p-2 rounded" required>
+                <input type="email" id="regEmail" placeholder="Email" class="w-full border p-2 rounded" required>
+                <input type="password" id="regPassword" placeholder="Password" class="w-full border p-2 rounded" required>
+                <select id="regRole" class="w-full border p-2 rounded">
+                    <option value="CUSTOMER">Customer Account</option>
+                    <option value="ADMIN">Admin Account</option>
+                </select>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded font-semibold">Register Account</button>
+            </form>
+        </div>
+
+        <!-- 📊 DASHBOARD SECTION -->
+        <div id="dashboardSection" class="hidden space-y-6">
+            
+            <!-- ADMIN ONLY: Add Product Form -->
+            <div id="adminPanel" class="bg-white p-6 rounded-lg shadow-md hidden">
+                <h2 class="text-xl font-bold mb-4 text-gray-700">➕ Add New Product (Admin Only)</h2>
+                <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="pName" placeholder="Product Name" class="border p-2 rounded" required>
+                    <input type="text" id="pSku" placeholder="SKU / Barcode" class="border p-2 rounded" required>
+                    <input type="number" id="pPrice" placeholder="Price ($)" class="border p-2 rounded" required>
+                    <input type="number" id="pQuantity" placeholder="Stock Quantity" class="border p-2 rounded" required>
+                    <button type="submit" class="md:col-span-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-semibold">+ Add Product to Database</button>
+                </form>
+            </div>
+
+            <!-- PRODUCT LIST -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-bold mb-4 text-gray-700">📦 Available Inventory Stock</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 border-b">
+                                <th class="p-3">SKU</th>
+                                <th class="p-3">Product Name</th>
+                                <th class="p-3">Price</th>
+                                <th class="p-3">Available Stock</th>
+                                <th class="p-3">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTableBody">
+                            <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CUSTOMER ONLY: My Orders Section -->
+            <div id="customerOrdersPanel" class="bg-white p-6 rounded-lg shadow-md hidden">
+                <h2 class="text-xl font-bold mb-4 text-gray-700">📜 My Purchase History</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 border-b">
+                                <th class="p-3">Order ID</th>
+                                <th class="p-3">Product</th>
+                                <th class="p-3">Quantity</th>
+                                <th class="p-3">Total Cost</th>
+                                <th class="p-3">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 
-    <!-- Table to display inventory -->
-    <div class="table-container">
-        <h3>Current Inventory List</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Product Name</th>
-                    <th>Quantity</th>
-                    <th>Price ($)</th>
-                </tr>
-            </thead>
-            <tbody id="inventoryTable">
-                <!-- Products will be dynamically added here -->
-            </tbody>
-        </table>
-    </div>
-
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        const API_URL = 'https://my-inventory-backend-qi9r.onrender.com/api/products';
+        const API_BASE = 'http://localhost:5000/api';
 
-        // ১. ব্যাকএন্ড থেকে প্রোডাক্টের তালিকা নিয়ে আসার ফাংশন
-        async function fetchProducts() {
-            try {
-                const response = await fetch(API_URL);
-                const products = await response.json();
+        window.onload = () => {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                showDashboard(user);
+            }
+        };
 
-                const table = document.getElementById('inventoryTable');
-                table.innerHTML = '';
-
-                products.forEach(product => {
-                    const newRow = table.insertRow();
-                    newRow.innerHTML = `
-                        <td>${product.name}</td>
-                        <td>${product.quantity}</td>
-                        <td>${product.price}</td>
-                    `;
-                });
-            } catch (error) {
-                console.error('Error fetching products:', error);
+        function toggleAuth(type) {
+            if (type === 'login') {
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('registerForm').classList.add('hidden');
+            } else {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('registerForm').classList.remove('hidden');
             }
         }
 
-        // ২. ব্যাকএন্ডে নতুন প্রোডাক্ট পাঠানোর ফাংশন
-        async function addProduct() {
-            const name = document.getElementById('productName').value;
-            const quantity = document.getElementById('productQuantity').value;
-            const price = document.getElementById('productPrice').value;
+        async function handleRegister(e) {
+            e.preventDefault();
+            const res = await fetch(`${API_BASE}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: document.getElementById('regName').value,
+                    email: document.getElementById('regEmail').value,
+                    password: document.getElementById('regPassword').value,
+                    role: document.getElementById('regRole').value
+                })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (res.ok) toggleAuth('login');
+        }
 
-            if (!name || !quantity || !price) {
-                alert('Please fill in all fields!');
+        async function handleLogin(e) {
+            e.preventDefault();
+            const res = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('loginEmail').value,
+                    password: document.getElementById('loginPassword').value
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('token', data.token);
+                showDashboard(data.user);
+            } else {
+                alert(data.message);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        function showDashboard(user) {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('userInfo').classList.remove('hidden');
+            
+            document.getElementById('userName').innerText = user.name;
+            document.getElementById('userRole').innerText = user.role;
+
+            if (user.role === 'ADMIN') {
+                document.getElementById('adminPanel').classList.remove('hidden');
+            } else {
+                document.getElementById('customerOrdersPanel').classList.remove('hidden');
+                loadCustomerOrders(user.id);
+            }
+
+            loadProducts(user);
+        }
+
+        async function loadProducts(user) {
+            const res = await fetch(`${API_BASE}/products`);
+            const products = await res.json();
+            
+            const tbody = document.getElementById('productTableBody');
+            tbody.innerHTML = '';
+
+            products.forEach(p => {
+                const isOutOfStock = p.quantity <= 0;
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3 font-mono text-sm">${p.sku}</td>
+                        <td class="p-3 font-semibold">${p.name}</td>
+                        <td class="p-3 text-green-600 font-bold">$${p.price}</td>
+                        <td class="p-3 ${p.quantity <= 5 ? 'text-red-500 font-bold' : ''}">${p.quantity} Pcs</td>
+                        <td class="p-3">
+                            ${user.role === 'CUSTOMER' 
+                                ? `
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-16 border p-1 text-center rounded" ${isOutOfStock ? 'disabled' : ''}>
+                                        <button onclick="buyProduct(${p.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-semibold ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}" ${isOutOfStock ? 'disabled' : ''}>
+                                            ${isOutOfStock ? 'Out of Stock' : 'Buy Now'}
+                                        </button>
+                                    </div>
+                                  `
+                                : `<span class="text-xs text-gray-400">Admin Managed</span>`}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Buy Product Function
+        async function buyProduct(productId) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const qtyInput = document.getElementById(`qty-${productId}`);
+            const quantity = parseInt(qtyInput.value);
+
+            if (!quantity || quantity <= 0) {
+                alert('Please enter a valid quantity');
                 return;
             }
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, quantity, price })
-                });
+            const res = await fetch(`${API_BASE}/sales`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer_id: user.id,
+                    product_id: productId,
+                    quantity: quantity
+                })
+            });
 
-                if (response.ok) {
-                    document.getElementById('productName').value = '';
-                    document.getElementById('productQuantity').value = '';
-                    document.getElementById('productPrice').value = '';
-                    fetchProducts();
-                }
-            } catch (error) {
-                console.error('Error adding product:', error);
+            const data = await res.json();
+            alert(data.message);
+
+            if (res.ok) {
+                // Refresh product stock and order history
+                loadProducts(user);
+                loadCustomerOrders(user.id);
             }
         }
 
-        fetchProducts();
+        // Load Orders for Logged-In Customer
+        async function loadCustomerOrders(customerId) {
+            const res = await fetch(`${API_BASE}/sales/customer/${customerId}`);
+            const orders = await res.json();
+
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
+
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-4 text-gray-400">No purchase history found.</td></tr>`;
+                return;
+            }
+
+            orders.forEach(o => {
+                const date = new Date(o.created_at).toLocaleDateString();
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50 text-sm">
+                        <td class="p-3 font-mono">#ORD-${o.sale_id}</td>
+                        <td class="p-3 font-semibold">${o.product_name}</td>
+                        <td class="p-3">${o.quantity} Pcs</td>
+                        <td class="p-3 text-green-600 font-bold">$${o.total_amount}</td>
+                        <td class="p-3 text-gray-500">${date}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function handleAddProduct(e) {
+            e.preventDefault();
+            const res = await fetch(`${API_BASE}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: document.getElementById('pName').value,
+                    sku: document.getElementById('pSku').value,
+                    price: document.getElementById('pPrice').value,
+                    quantity: document.getElementById('pQuantity').value
+                })
+            });
+            const data = await res.json();
+            alert(data.message);
+            if (res.ok) {
+                e.target.reset();
+                const user = JSON.parse(localStorage.getItem('user'));
+                loadProducts(user);
+            }
+        }
     </script>
 </body>
 </html>
