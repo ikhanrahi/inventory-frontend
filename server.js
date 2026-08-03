@@ -6,7 +6,7 @@ require('dotenv').config();
 const db = require('./db');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process process.env.PORT || 5000;
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
@@ -75,7 +75,13 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         const loginTime = new Date().toISOString();
-        await db.query('UPDATE users SET updated_at = $1 WHERE id = $2', [loginTime, user.id]);
+
+        // Safe timestamp update (prevents crash if updated_at is missing)
+        try {
+            await db.query('UPDATE users SET updated_at = $1 WHERE id = $2', [loginTime, user.id]);
+        } catch (e) {
+            console.log('updated_at column notice:', e.message);
+        }
 
         const token = jwt.sign({ id: user.id, name: user.name, role: user.role }, process.env.JWT_SECRET || 'secretkey', { expiresIn: '1d' });
         res.json({ 
@@ -87,7 +93,7 @@ app.post('/api/auth/login', async (req, res) => {
                 email: user.email, 
                 role: user.role, 
                 currency: user.currency || 'USD',
-                lastLogin: loginTime 
+                lastLogin: user.updated_at || loginTime 
             } 
         });
     } catch (err) {
@@ -135,7 +141,7 @@ app.get('/api/admin/users-stats', async (req, res) => {
 
 app.get('/api/admin/all-users', async (req, res) => {
     try {
-        const result = await db.query('SELECT id, name, email, role, currency, is_approved, created_at, updated_at FROM users ORDER BY id DESC');
+        const result = await db.query('SELECT id, name, email, role, currency, is_approved, created_at FROM users ORDER BY id DESC');
         res.json(result.rows);
     } catch (err) {
         console.error('Fetch All Users Error:', err.message);
