@@ -10,10 +10,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- SweetAlert2 for Professional Popups & Toasts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
+        }
+        /* SweetAlert Dark Theme Customization */
+        .swal2-popup {
+            background: #1e293b !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(51, 65, 85, 0.6) !important;
+            border-radius: 1rem !important;
+        }
+        .swal2-title {
+            color: #f8fafc !important;
         }
     </style>
 </head>
@@ -255,6 +267,28 @@
         let allProducts = [];
         let currentReportData = [];
 
+        // 🌟 Professional Toast Notification Helper
+        function showToast(message, type = 'success') {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                background: '#1e293b',
+                color: '#f8fafc',
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+
+            Toast.fire({
+                icon: type,
+                title: message
+            });
+        }
+
         window.onload = () => {
             const user = JSON.parse(localStorage.getItem('user'));
             if (user) {
@@ -290,10 +324,15 @@
                     })
                 });
                 const data = await res.json();
-                alert(data.message || data.error || 'Registration failed');
-                if (res.ok) toggleAuth('login');
+                
+                if (res.ok) {
+                    showToast(data.message || 'Registration successful!', 'success');
+                    toggleAuth('login');
+                } else {
+                    showToast(data.message || data.error || 'Registration failed', 'error');
+                }
             } catch (err) {
-                alert('Server Connection Error!');
+                showToast('Server Connection Error!', 'error');
             }
         }
 
@@ -312,12 +351,13 @@
                 if (res.ok) {
                     localStorage.setItem('user', JSON.stringify(data.user));
                     localStorage.setItem('token', data.token);
+                    showToast('Login successful!', 'success');
                     showDashboard(data.user);
                 } else {
-                    alert(data.message || data.error || 'Login failed');
+                    showToast(data.message || data.error || 'Login failed', 'error');
                 }
             } catch (err) {
-                alert('Server Connection Error!');
+                showToast('Server Connection Error!', 'error');
             }
         }
 
@@ -380,7 +420,7 @@
 
         function exportToCSV() {
             if (!currentReportData || currentReportData.length === 0) {
-                alert('No sales records found for the selected period!');
+                showToast('No sales records found for the selected period!', 'warning');
                 return;
             }
 
@@ -405,6 +445,7 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            showToast('Sales Report CSV Downloaded!', 'success');
         }
 
         async function loadProducts(user) {
@@ -471,7 +512,7 @@
             const quantity = parseInt(qtyInput.value);
 
             if (!quantity || quantity <= 0) {
-                alert('Please enter a valid quantity');
+                showToast('Please enter a valid quantity', 'warning');
                 return;
             }
 
@@ -486,28 +527,43 @@
             });
 
             const data = await res.json();
-            alert(data.message || data.error);
 
             if (res.ok) {
+                showToast(data.message || 'Purchase successful!', 'success');
                 loadProducts(user);
                 loadCustomerOrders(user.id);
+            } else {
+                showToast(data.message || data.error || 'Purchase failed', 'error');
             }
         }
 
         async function deleteProduct(productId) {
-            if (!confirm('Are you sure you want to delete this product?')) return;
-            
+            // Professional SweetAlert Confirmation Modal
+            const result = await Swal.fire({
+                title: 'Delete Product?',
+                text: "This action cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#475569',
+                confirmButtonText: 'Yes, Delete It!'
+            });
+
+            if (!result.isConfirmed) return;
+
             const user = JSON.parse(localStorage.getItem('user'));
             const res = await fetch(`${API_BASE}/products/${productId}`, {
                 method: 'DELETE'
             });
 
             const data = await res.json();
-            alert(data.message || data.error);
 
             if (res.ok) {
+                showToast('Product deleted successfully!', 'success');
                 loadProducts(user);
                 if (user.role === 'ADMIN') loadAnalytics();
+            } else {
+                showToast(data.message || data.error || 'Failed to delete product', 'error');
             }
         }
 
@@ -557,12 +613,15 @@
                 })
             });
             const data = await res.json();
-            alert(data.message || data.error);
+
             if (res.ok) {
+                showToast(data.message || 'Product added successfully!', 'success');
                 e.target.reset();
                 const user = JSON.parse(localStorage.getItem('user'));
                 loadProducts(user);
                 if (user.role === 'ADMIN') loadAnalytics();
+            } else {
+                showToast(data.message || data.error || 'Failed to add product', 'error');
             }
         }
 
@@ -590,6 +649,7 @@
 
             html2pdf().set(opt).from(element).save().then(() => {
                 element.classList.add('hidden');
+                showToast('Invoice PDF downloaded!', 'success');
             });
         }
     </script>
