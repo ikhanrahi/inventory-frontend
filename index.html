@@ -7,7 +7,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- html2pdf Library for Invoice Generation -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
 
@@ -52,6 +52,22 @@
 
         <!-- 📊 DASHBOARD SECTION -->
         <div id="dashboardSection" class="hidden space-y-6">
+
+            <!-- 📊 ADMIN ANALYTICS CARDS (Visible only to Admin) -->
+            <div id="analyticsSection" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Total Revenue</p>
+                    <h3 id="statRevenue" class="text-3xl font-bold text-gray-800 mt-2">$0.00</h3>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Total Products Sold</p>
+                    <h3 id="statSold" class="text-3xl font-bold text-gray-800 mt-2">0 Pcs</h3>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+                    <p class="text-gray-500 text-sm font-semibold uppercase">Low Stock Alerts</p>
+                    <h3 id="statLowStock" class="text-3xl font-bold text-red-600 mt-2">0 Items</h3>
+                </div>
+            </div>
             
             <!-- ADMIN ONLY: Add Product Form -->
             <div id="adminPanel" class="bg-white p-6 rounded-lg shadow-md hidden">
@@ -98,6 +114,7 @@
                                 <th class="p-3">Quantity</th>
                                 <th class="p-3">Total Cost</th>
                                 <th class="p-3">Date</th>
+                                <th class="p-3">Invoice</th>
                             </tr>
                         </thead>
                         <tbody id="ordersTableBody">
@@ -113,9 +130,7 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        //const API_BASE = 'http://localhost:5000/api';
-        // Localhost এর জায়গায় Render এর লিঙ্ক বসিয়ে দিন:
-const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
+        const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
 
         window.onload = () => {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -136,38 +151,46 @@ const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
 
         async function handleRegister(e) {
             e.preventDefault();
-            const res = await fetch(`${API_BASE}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: document.getElementById('regName').value,
-                    email: document.getElementById('regEmail').value,
-                    password: document.getElementById('regPassword').value,
-                    role: document.getElementById('regRole').value
-                })
-            });
-            const data = await res.json();
-            alert(data.message);
-            if (res.ok) toggleAuth('login');
+            try {
+                const res = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('regName').value,
+                        email: document.getElementById('regEmail').value,
+                        password: document.getElementById('regPassword').value,
+                        role: document.getElementById('regRole').value
+                    })
+                });
+                const data = await res.json();
+                alert(data.message || data.error || 'Registration failed');
+                if (res.ok) toggleAuth('login');
+            } catch (err) {
+                alert('Server Connection Error!');
+            }
         }
 
         async function handleLogin(e) {
             e.preventDefault();
-            const res = await fetch(`${API_BASE}/auth/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: document.getElementById('loginEmail').value,
-                    password: document.getElementById('loginPassword').value
-                })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                localStorage.setItem('user', JSON.stringify(data.user));
-                localStorage.setItem('token', data.token);
-                showDashboard(data.user);
-            } else {
-                alert(data.message);
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('loginEmail').value,
+                        password: document.getElementById('loginPassword').value
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    showDashboard(data.user);
+                } else {
+                    alert(data.message || data.error || 'Login failed');
+                }
+            } catch (err) {
+                alert('Server Connection Error!');
             }
         }
 
@@ -186,12 +209,27 @@ const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
 
             if (user.role === 'ADMIN') {
                 document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('analyticsSection').classList.remove('hidden');
+                loadAnalytics();
             } else {
                 document.getElementById('customerOrdersPanel').classList.remove('hidden');
                 loadCustomerOrders(user.id);
             }
 
             loadProducts(user);
+        }
+
+        async function loadAnalytics() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/analytics`);
+                const stats = await res.json();
+
+                document.getElementById('statRevenue').innerText = `$${stats.totalRevenue.toFixed(2)}`;
+                document.getElementById('statSold').innerText = `${stats.totalItemsSold} Pcs`;
+                document.getElementById('statLowStock').innerText = `${stats.lowStockCount} Items`;
+            } catch (err) {
+                console.error('Error loading analytics:', err);
+            }
         }
 
         async function loadProducts(user) {
@@ -226,7 +264,6 @@ const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
             });
         }
 
-        // Buy Product Function
         async function buyProduct(productId) {
             const user = JSON.parse(localStorage.getItem('user'));
             const qtyInput = document.getElementById(`qty-${productId}`);
@@ -248,50 +285,46 @@ const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
             });
 
             const data = await res.json();
-            alert(data.message);
+            alert(data.message || data.error);
 
             if (res.ok) {
-                // Refresh product stock and order history
                 loadProducts(user);
                 loadCustomerOrders(user.id);
             }
         }
 
-        // Load Orders for Logged-In Customer
-        // Load Orders for Logged-In Customer
-async function loadCustomerOrders(customerId) {
-    const res = await fetch(`${API_BASE}/sales/customer/${customerId}`);
-    const orders = await res.json();
+        async function loadCustomerOrders(customerId) {
+            const res = await fetch(`${API_BASE}/sales/customer/${customerId}`);
+            const orders = await res.json();
 
-    const tbody = document.getElementById('ordersTableBody');
-    tbody.innerHTML = '';
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
 
-    if (orders.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-400">No purchase history found.</td></tr>`;
-        return;
-    }
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-400">No purchase history found.</td></tr>`;
+                return;
+            }
 
-    orders.forEach(o => {
-        const date = new Date(o.created_at).toLocaleDateString();
-        // Object formatting for stringifying
-        const orderData = JSON.stringify(o).replace(/"/g, '&quot;');
-        
-        tbody.innerHTML += `
-            <tr class="border-b hover:bg-gray-50 text-sm">
-                <td class="p-3 font-mono">#ORD-${o.sale_id}</td>
-                <td class="p-3 font-semibold">${o.product_name}</td>
-                <td class="p-3">${o.quantity} Pcs</td>
-                <td class="p-3 text-green-600 font-bold">$${o.total_amount}</td>
-                <td class="p-3 text-gray-500">${date}</td>
-                <td class="p-3">
-                    <button onclick="downloadPDF(${orderData})" class="bg-gray-800 hover:bg-black text-white px-2 py-1 rounded text-xs flex items-center gap-1">
-                        📄 Invoice
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
-}
+            orders.forEach(o => {
+                const date = new Date(o.created_at).toLocaleDateString();
+                const orderData = JSON.stringify(o).replace(/"/g, '&quot;');
+                
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50 text-sm">
+                        <td class="p-3 font-mono">#ORD-${o.sale_id}</td>
+                        <td class="p-3 font-semibold">${o.product_name}</td>
+                        <td class="p-3">${o.quantity} Pcs</td>
+                        <td class="p-3 text-green-600 font-bold">$${o.total_amount}</td>
+                        <td class="p-3 text-gray-500">${date}</td>
+                        <td class="p-3">
+                            <button onclick="downloadPDF(${orderData})" class="bg-gray-800 hover:bg-black text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                                📄 Invoice
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
 
         async function handleAddProduct(e) {
             e.preventDefault();
@@ -306,86 +339,84 @@ async function loadCustomerOrders(customerId) {
                 })
             });
             const data = await res.json();
-            alert(data.message);
+            alert(data.message || data.error);
             if (res.ok) {
                 e.target.reset();
                 const user = JSON.parse(localStorage.getItem('user'));
                 loadProducts(user);
+                if (user.role === 'ADMIN') loadAnalytics();
             }
         }
-        // Function to generate and download PDF Invoice
-function downloadPDF(order) {
-    const user = JSON.parse(localStorage.getItem('user'));
 
-    // Populate Data into Invoice Template
-    document.getElementById('invDate').innerText = `Date: ${new Date(order.created_at).toLocaleDateString()}`;
-    document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
-    document.getElementById('invCustomerName').innerText = user.name;
-    document.getElementById('invProductName').innerText = order.product_name;
-    document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
-    document.getElementById('invUnitPrice').innerText = `$${order.unit_price}`;
-    document.getElementById('invTotal').innerText = `$${order.total_amount}`;
+        function downloadPDF(order) {
+            const user = JSON.parse(localStorage.getItem('user'));
 
-    // Target the element
-    const element = document.getElementById('invoiceTemplate');
-    element.classList.remove('hidden'); // Temporarily unhide to capture
+            document.getElementById('invDate').innerText = `Date: ${new Date(order.created_at).toLocaleDateString()}`;
+            document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
+            document.getElementById('invCustomerName').innerText = user.name;
+            document.getElementById('invProductName').innerText = order.product_name;
+            document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
+            document.getElementById('invUnitPrice').innerText = `$${order.unit_price}`;
+            document.getElementById('invTotal').innerText = `$${order.total_amount}`;
 
-    // PDF options
-    const opt = {
-        margin:       0.5,
-        filename:     `Invoice_ORD_${order.sale_id}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-    };
+            const element = document.getElementById('invoiceTemplate');
+            element.classList.remove('hidden');
 
-    // Generate PDF and then hide template again
-    html2pdf().set(opt).from(element).save().then(() => {
-        element.classList.add('hidden');
-    });
-}
+            const opt = {
+                margin:       0.5,
+                filename:     `Invoice_ORD_${order.sale_id}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.classList.add('hidden');
+            });
+        }
     </script>
-    <!-- 🧾 INVOICE TEMPLATE (Hidden from UI, used only for PDF generation) -->
-<div id="invoiceTemplate" class="hidden p-8 bg-white text-gray-800 font-sans" style="width: 700px;">
-    <div class="flex justify-between items-center border-b pb-4 mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1>
-            <p class="text-sm text-gray-500">Enterprise Inventory ERP</p>
+
+    <!-- 🧾 INVOICE TEMPLATE -->
+    <div id="invoiceTemplate" class="hidden p-8 bg-white text-gray-800 font-sans" style="width: 700px;">
+        <div class="flex justify-between items-center border-b pb-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1>
+                <p class="text-sm text-gray-500">Enterprise Inventory ERP</p>
+            </div>
+            <div class="text-right">
+                <p id="invDate" class="text-sm text-gray-600"></p>
+                <p id="invNumber" class="font-bold font-mono text-gray-800"></p>
+            </div>
         </div>
-        <div class="text-right">
-            <p id="invDate" class="text-sm text-gray-600"></p>
-            <p id="invNumber" class="font-bold font-mono text-gray-800"></p>
+
+        <div class="mb-6">
+            <h3 class="text-xs uppercase font-bold text-gray-400 mb-1">Billed To:</h3>
+            <p id="invCustomerName" class="font-semibold text-lg"></p>
+        </div>
+
+        <table class="w-full text-left border-collapse mb-6">
+            <thead>
+                <tr class="border-b-2 border-gray-200 bg-gray-50">
+                    <th class="py-2 px-3 text-sm font-bold">Product Name</th>
+                    <th class="py-2 px-3 text-sm font-bold text-center">Qty</th>
+                    <th class="py-2 px-3 text-sm font-bold text-right">Unit Price</th>
+                    <th class="py-2 px-3 text-sm font-bold text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="border-b">
+                    <td id="invProductName" class="py-3 px-3"></td>
+                    <td id="invQty" class="py-3 px-3 text-center"></td>
+                    <td id="invUnitPrice" class="py-3 px-3 text-right"></td>
+                    <td id="invTotal" class="py-3 px-3 text-right font-bold text-green-600"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="border-t pt-4 text-center text-xs text-gray-400">
+            <p>Thank you for your business!</p>
+            <p>Generated automatically via Enterprise Inventory System</p>
         </div>
     </div>
-
-    <div class="mb-6">
-        <h3 class="text-xs uppercase font-bold text-gray-400 mb-1">Billed To:</h3>
-        <p id="invCustomerName" class="font-semibold text-lg"></p>
-    </div>
-
-    <table class="w-full text-left border-collapse mb-6">
-        <thead>
-            <tr class="border-b-2 border-gray-200 bg-gray-50">
-                <th class="py-2 px-3 text-sm font-bold">Product Name</th>
-                <th class="py-2 px-3 text-sm font-bold text-center">Qty</th>
-                <th class="py-2 px-3 text-sm font-bold text-right">Unit Price</th>
-                <th class="py-2 px-3 text-sm font-bold text-right">Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="border-b">
-                <td id="invProductName" class="py-3 px-3"></td>
-                <td id="invQty" class="py-3 px-3 text-center"></td>
-                <td id="invUnitPrice" class="py-3 px-3 text-right"></td>
-                <td id="invTotal" class="py-3 px-3 text-right font-bold text-green-600"></td>
-            </tr>
-        </tbody>
-    </table>
-
-    <div class="border-t pt-4 text-center text-xs text-gray-400">
-        <p>Thank you for your business!</p>
-        <p>Generated automatically via Enterprise Inventory System</p>
-    </div>
-</div>
 </body>
 </html>

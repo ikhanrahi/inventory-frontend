@@ -225,6 +225,33 @@ app.get('/api/sales/customer/:id', async (req, res) => {
     }
 });
 
+// -------------------------------------------------------------
+// 📊 ADMIN ANALYTICS ROUTES
+// -------------------------------------------------------------
+
+app.get('/api/admin/analytics', async (req, res) => {
+    try {
+        // 1. মোট সেলস রেভিনিউ হিসাব করা
+        const revenueRes = await db.query('SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM sales');
+        
+        // 2. মোট কত পিস আইটেম বিক্রি হয়েছে
+        const itemsSoldRes = await db.query('SELECT COALESCE(SUM(quantity), 0) as total_items_sold FROM sale_items');
+
+        // 3. লো স্টক প্রোডাক্টের সংখ্যা (Quantity <= 5)
+        const lowStockRes = await db.query('SELECT * FROM products WHERE quantity <= 5 ORDER BY quantity ASC');
+
+        res.json({
+            totalRevenue: Number(revenueRes.rows[0].total_revenue),
+            totalItemsSold: Number(itemsSoldRes.rows[0].total_items_sold),
+            lowStockCount: lowStockRes.rows.length,
+            lowStockProducts: lowStockRes.rows
+        });
+    } catch (err) {
+        console.error('Analytics Error:', err.message);
+        res.status(500).json({ error: 'Failed to fetch analytics data' });
+    }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`📡 Server running on http://localhost:${PORT}`);
 });
