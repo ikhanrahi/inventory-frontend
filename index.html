@@ -149,26 +149,30 @@
             <!-- TAB 1: DASHBOARD & INVENTORY SECTION -->
             <div id="section-inventory" class="admin-tab-content space-y-6">
                 <!-- ADMIN STATS CARDS -->
-                <div id="analyticsSection" class="grid grid-cols-1 md:grid-cols-4 gap-4 hidden">
+                <div id="analyticsSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 hidden">
                     <div class="bg-slate-800/80 border border-slate-700/50 p-4 rounded-2xl">
-                        <p class="text-xs font-bold text-slate-400 uppercase">Total Revenue</p>
-                        <h3 id="statRevenue" class="text-2xl font-black text-emerald-400 mt-1">0.00</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Total Revenue</p>
+                        <h3 id="statRevenue" class="text-xl font-black text-emerald-400 mt-1">0.00</h3>
                     </div>
                     <div class="bg-slate-800/80 border border-slate-700/50 p-4 rounded-2xl">
-                        <p class="text-xs font-bold text-slate-400 uppercase">Total Admins</p>
-                        <h3 id="statAdmins" class="text-2xl font-black text-indigo-400 mt-1">0</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Low Stock Alert</p>
+                        <h3 id="statLowStock" class="text-xl font-black text-rose-400 mt-1">0 Items</h3>
                     </div>
                     <div class="bg-slate-800/80 border border-slate-700/50 p-4 rounded-2xl">
-                        <p class="text-xs font-bold text-slate-400 uppercase">Registered Customers</p>
-                        <h3 id="statCustomers" class="text-2xl font-black text-sky-400 mt-1">0</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Total Admins</p>
+                        <h3 id="statAdmins" class="text-xl font-black text-indigo-400 mt-1">0</h3>
                     </div>
                     <div class="bg-slate-800/80 border border-slate-700/50 p-4 rounded-2xl">
-                        <p class="text-xs font-bold text-slate-400 uppercase">Pending Approvals</p>
-                        <h3 id="statPending" class="text-2xl font-black text-amber-400 mt-1">0</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Customers</p>
+                        <h3 id="statCustomers" class="text-xl font-black text-sky-400 mt-1">0</h3>
+                    </div>
+                    <div class="bg-slate-800/80 border border-slate-700/50 p-4 rounded-2xl">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Pending Approvals</p>
+                        <h3 id="statPending" class="text-xl font-black text-amber-400 mt-1">0</h3>
                     </div>
                 </div>
 
-                <!-- ADMIN ONLY: Add Product Form (EXPANDED FIELDS) -->
+                <!-- ADMIN ONLY: Add Product Form -->
                 <div id="adminPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
                     <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-indigo-400"></i> Add New Stock Item</h2>
                     <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -242,7 +246,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: ENTERPRISE REPORTS SECTION -->
+            <!-- TAB 3: EXPANDED ENTERPRISE REPORTS SECTION (7 TABS) -->
             <div id="section-reports" class="admin-tab-content bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
@@ -255,13 +259,15 @@
                     </div>
                 </div>
 
-                <!-- Report Type Selection Tabs -->
-                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-900/60 p-2 rounded-xl border border-slate-700/50">
-                    <button onclick="loadReport('sales')" id="tab-sales" class="report-tab py-2 text-xs font-bold rounded-lg text-white bg-indigo-600">Sales Report</button>
-                    <button onclick="loadReport('stocks')" id="tab-stocks" class="report-tab py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white">Stock Report</button>
-                    <button onclick="loadReport('profit')" id="tab-profit" class="report-tab py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white">Profit Analysis</button>
-                    <button onclick="loadReport('category')" id="tab-category" class="report-tab py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white">Category Report</button>
-                    <button onclick="loadReport('customer')" id="tab-customer" class="report-tab py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white">Customer Report</button>
+                <!-- Expanded 7 Report Navigation Tabs -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 bg-slate-900/60 p-2 rounded-xl border border-slate-700/50">
+                    <button onclick="loadReport('sales')" id="tab-sales" class="report-tab py-2 text-[11px] font-bold rounded-lg text-white bg-indigo-600">Sales Report</button>
+                    <button onclick="loadReport('stocks')" id="tab-stocks" class="report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Stock Report</button>
+                    <button onclick="loadReport('lowstock')" id="tab-lowstock" class="report-tab py-2 text-[11px] font-bold rounded-lg text-rose-400 hover:text-white">⚠️ Low Stock</button>
+                    <button onclick="loadReport('supplier')" id="tab-supplier" class="report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Supplier & Brand</button>
+                    <button onclick="loadReport('profit')" id="tab-profit" class="report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Profit Analysis</button>
+                    <button onclick="loadReport('category')" id="tab-category" class="report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Category Report</button>
+                    <button onclick="loadReport('customer')" id="tab-customer" class="report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white">Customer Report</button>
                 </div>
 
                 <!-- Date Range Inputs for Sales Report -->
@@ -547,6 +553,7 @@
                 const userStats = await resUsers.json();
 
                 document.getElementById('statRevenue').innerText = `${sym}${stats.totalRevenue.toFixed(2)}`;
+                document.getElementById('statLowStock').innerText = `${stats.lowStockCount} Items`;
                 document.getElementById('statAdmins').innerText = `${userStats.totalAdmins}`;
                 document.getElementById('statCustomers').innerText = `${userStats.totalCustomers}`;
                 document.getElementById('statPending').innerText = `${userStats.pendingApprovals}`;
@@ -687,11 +694,12 @@
             }
         }
 
+        // 📊 EXPANDED REPORTS CONTROLLER (HANDLES ALL 7 TABS)
         async function loadReport(type) {
             activeReportType = type;
             reportCurrentPage = 1;
-            document.querySelectorAll('.report-tab').forEach(b => b.className = 'report-tab py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white');
-            document.getElementById(`tab-${type}`).className = 'report-tab py-2 text-xs font-bold rounded-lg text-white bg-indigo-600';
+            document.querySelectorAll('.report-tab').forEach(b => b.className = 'report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white');
+            document.getElementById(`tab-${type}`).className = 'report-tab py-2 text-[11px] font-bold rounded-lg text-white bg-indigo-600';
 
             const dateBox = document.getElementById('dateFilterBox');
             if (type === 'sales') dateBox.classList.remove('hidden');
@@ -728,11 +736,17 @@
             const pageData = fullReportData.slice(startIdx, startIdx + reportRowsPerPage);
 
             if (activeReportType === 'sales') {
-                thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>Order ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total (${sym})</th><th>Date & Time</th></tr>`;
-                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">#ORD-${r.sale_id}</td><td class="p-2.5 font-semibold">${r.customer_name}</td><td class="p-2.5">${r.product_name}</td><td class="p-2.5">${r.quantity} Pcs</td><td class="p-2.5 font-bold text-emerald-400">${sym}${r.total_amount}</td><td class="p-2.5 text-slate-400">${formatDateTime(r.created_at)}</td></tr>`);
+                thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>Order ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Payment</th><th>Total (${sym})</th><th>Date & Time</th></tr>`;
+                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">#ORD-${r.sale_id}</td><td class="p-2.5 font-semibold">${r.customer_name}</td><td class="p-2.5">${r.product_name}</td><td class="p-2.5">${r.quantity} Pcs</td><td class="p-2.5 text-slate-300 font-mono">${r.payment_method || 'Cash'}</td><td class="p-2.5 font-bold text-emerald-400">${sym}${r.total_amount}</td><td class="p-2.5 text-slate-400">${formatDateTime(r.created_at)}</td></tr>`);
             } else if (activeReportType === 'stocks') {
                 thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>SKU</th><th>Product Name</th><th>Category & Brand</th><th>Location</th><th>Selling Price</th><th>Stock Status</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">${r.sku}</td><td class="p-2.5 font-bold">${r.name}</td><td class="p-2.5">${r.category} (${r.brand || 'Generic'})</td><td class="p-2.5 text-amber-400">${r.location || 'Main Stock'}</td><td class="p-2.5 text-emerald-400 font-bold">${sym}${r.price}</td><td class="p-2.5 font-bold ${r.quantity <= 5 ? 'text-rose-400' : 'text-emerald-400'}">${r.quantity} Pcs</td></tr>`);
+            } else if (activeReportType === 'lowstock') {
+                thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>SKU</th><th>Product Name</th><th>Category</th><th>Supplier</th><th>Price</th><th>Stock Left</th></tr>`;
+                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">${r.sku}</td><td class="p-2.5 font-bold text-rose-300">${r.name}</td><td class="p-2.5">${r.category}</td><td class="p-2.5 text-slate-300">${r.supplier || 'N/A'}</td><td class="p-2.5 font-bold">${sym}${r.price}</td><td class="p-2.5 font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full inline-block my-1">${r.quantity} Pcs Left</td></tr>`);
+            } else if (activeReportType === 'supplier') {
+                thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>Supplier / Vendor</th><th>Brand Name</th><th>Total Products</th><th>Items Stocked</th><th>Cost Value (${sym})</th></tr>`;
+                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 font-bold text-indigo-300">${r.supplier}</td><td class="p-2.5 font-semibold text-slate-200">${r.brand}</td><td class="p-2.5">${r.total_products} Items</td><td class="p-2.5 font-bold">${r.total_stock} Pcs</td><td class="p-2.5 font-bold text-emerald-400">${sym}${parseFloat(r.total_cost_value || 0).toFixed(2)}</td></tr>`);
             } else if (activeReportType === 'profit') {
                 thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>Product Name</th><th>Total Sold</th><th>Gross Revenue</th><th>Total Cost</th><th>Net Profit (${sym})</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 font-bold">${r.product_name}</td><td class="p-2.5">${r.total_sold} Pcs</td><td class="p-2.5 text-sky-400">${sym}${r.gross_revenue}</td><td class="p-2.5 text-slate-400">${sym}${r.total_cost}</td><td class="p-2.5 font-black text-emerald-400">${sym}${r.net_profit}</td></tr>`);
@@ -788,7 +802,12 @@
                         <td class="p-3 text-right">
                             ${user.role === 'CUSTOMER' ? `
                                 <div class="flex items-center justify-end gap-2">
-                                    <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-14 bg-slate-900 border border-slate-700 p-1 text-center rounded-lg text-xs" ${isOutOfStock ? 'disabled' : ''}>
+                                    <select id="payMethod-${p.id}" class="bg-slate-900 border border-slate-700 text-[10px] text-slate-200 p-1 rounded-lg">
+                                        <option value="Cash">Cash</option>
+                                        <option value="Card">Card</option>
+                                        <option value="Bkash">Bkash</option>
+                                    </select>
+                                    <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-12 bg-slate-900 border border-slate-700 p-1 text-center rounded-lg text-xs" ${isOutOfStock ? 'disabled' : ''}>
                                     <button onclick="buyProduct(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg text-xs font-semibold ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}" ${isOutOfStock ? 'disabled' : ''}>Buy Now</button>
                                 </div>
                             ` : `
@@ -861,7 +880,15 @@
         async function buyProduct(id) {
             const user = JSON.parse(localStorage.getItem('user'));
             const qty = parseInt(document.getElementById(`qty-${id}`).value);
-            const res = await fetch(`${API_BASE}/sales`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: user.id, product_id: id, quantity: qty }) });
+            const payMethodEl = document.getElementById(`payMethod-${id}`);
+            const payMethod = payMethodEl ? payMethodEl.value : 'Cash';
+
+            const res = await fetch(`${API_BASE}/sales`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ customer_id: user.id, product_id: id, quantity: qty, payment_method: payMethod }) 
+            });
+
             if (res.ok) { showToast('Purchase successful!', 'success'); loadProducts(user); loadCustomerOrders(user.id); }
             else showToast('Purchase failed', 'error');
         }

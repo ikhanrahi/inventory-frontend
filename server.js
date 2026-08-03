@@ -193,7 +193,7 @@ app.delete('/api/admin/delete-user/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 📦 EXPANDED PRODUCT ROUTES (Brand, Supplier, Location, Expiry)
+// 📦 PRODUCT ROUTES
 // -------------------------------------------------------------
 
 app.get('/api/products', async (req, res) => {
@@ -259,11 +259,11 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// 🛒 SALES & REPORTS
+// 🛒 SALES & ADVANCED REPORTING ENGINE
 // -------------------------------------------------------------
 
 app.post('/api/sales', async (req, res) => {
-    const { customer_id, product_id, quantity } = req.body;
+    const { customer_id, product_id, quantity, payment_method } = req.body;
     try {
         const productRes = await db.query('SELECT * FROM products WHERE id = $1', [product_id]);
         if (productRes.rows.length === 0) return res.status(404).json({ message: 'Product not found' });
@@ -273,13 +273,19 @@ app.post('/api/sales', async (req, res) => {
 
         const totalAmount = product.price * quantity;
         const newStock = product.quantity - quantity;
+        const pMethod = payment_method || 'Cash';
 
-        const saleRes = await db.query('INSERT INTO sales (customer_id, total_amount, payment_status) VALUES ($1, $2, $3) RETURNING id', [customer_id, totalAmount, 'PAID']);
+        const saleRes = await db.query(
+            'INSERT INTO sales (customer_id, total_amount, payment_status, payment_method) VALUES ($1, $2, $3, $4) RETURNING id', 
+            [customer_id, totalAmount, 'PAID', pMethod]
+        );
+        
         await db.query('INSERT INTO sale_items (sale_id, product_id, quantity, unit_price) VALUES ($1, $2, $3, $4)', [saleRes.rows[0].id, product_id, quantity, product.price]);
         await db.query('UPDATE products SET quantity = $1 WHERE id = $2', [newStock, product_id]);
 
         res.status(201).json({ message: 'Purchase completed successfully!', saleId: saleRes.rows[0].id });
     } catch (err) {
+        console.error('Sales Error:', err.message);
         res.status(500).json({ error: 'Purchase failed' });
     }
 });
@@ -303,16 +309,19 @@ app.get('/api/admin/analytics', async (req, res) => {
     try {
         const revenueRes = await db.query('SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM sales');
         const itemsSoldRes = await db.query('SELECT COALESCE(SUM(quantity), 0) as total_items_sold FROM sale_items');
+        const lowStockRes = await db.query('SELECT COUNT(*) as low_stock_count FROM products WHERE quantity <= 5');
 
         res.json({
             totalRevenue: Number(revenueRes.rows[0].total_revenue),
-            totalItemsSold: Number(itemsSoldRes.rows[0].total_items_sold)
+            totalItemsSold: Number(itemsSoldRes.rows[0].total_items_sold),
+            lowStockCount: Number(lowStockRes.rows[0].low_stock_count)
         });
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch analytics' });
     }
 });
 
+// 📊 EXPANDED REPORTS ROUTE
 app.get('/api/admin/reports/:type', async (req, res) => {
     const { type } = req.params;
     const { startDate, endDate } = req.query;
@@ -324,7 +333,7 @@ app.get('/api/admin/reports/:type', async (req, res) => {
         if (type === 'sales') {
             query = `
                 SELECT s.id as sale_id, COALESCE(u.name, 'Customer') as customer_name, COALESCE(p.name, 'Product') as product_name, 
-                       si.quantity, si.unit_price, s.total_amount, s.created_at
+                       si.quantity, si.unit_price, s.total_amount, COALESCE(s.payment_method, 'Cash') as payment_method, s.created_at
                 FROM sales s
                 LEFT JOIN users u ON s.customer_id = u.id
                 LEFT JOIN sale_items si ON s.id = si.sale_id
@@ -338,6 +347,18 @@ app.get('/api/admin/reports/:type', async (req, res) => {
         } 
         else if (type === 'stocks') {
             query = `SELECT id, name, sku, category, brand, supplier, location, expiry_date, price, cost_price, quantity FROM products ORDER BY quantity ASC`;
+        }
+        else if (type === 'lowstock') {
+            // 📉 Low Stock / Out of Stock Report
+            query = `SELECT id, name, sku, category, brand, supplier, location, price, quantity FROM products WHERE quantity <= 5 ORDER BY quantity ASC`;
+        }
+        else if (type === 'supplier') {
+            // 🏢 Supplier / Brand Summary Report
+            query = `
+                SELECT COALESCE(supplier, 'N/A') as supplier, COALESCE(brand, 'Generic') as brand, 
+                       COUNT(*) as total_products, SUM(quantity) as total_stock, SUM(cost_price * quantity) as total_cost_value 
+                FROM products GROUP BY supplier, brand ORDER BY total_stock DESC
+            `;
         }
         else if (type === 'profit') {
             query = `
