@@ -11,7 +11,6 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// In-Memory/Database Admin Passcode fallback variable
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
 app.get('/', (req, res) => {
@@ -75,11 +74,22 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(403).json({ message: 'Your account is pending Admin approval.' });
         }
 
+        // 🕒 Capture exact Login Time & Update Database
+        const loginTime = new Date().toISOString();
+        await db.query('UPDATE users SET updated_at = $1 WHERE id = $2', [loginTime, user.id]);
+
         const token = jwt.sign({ id: user.id, name: user.name, role: user.role }, process.env.JWT_SECRET || 'secretkey', { expiresIn: '1d' });
         res.json({ 
             message: 'Login successful!', 
             token, 
-            user: { id: user.id, name: user.name, email: user.email, role: user.role, currency: user.currency || 'USD' } 
+            user: { 
+                id: user.id, 
+                name: user.name, 
+                email: user.email, 
+                role: user.role, 
+                currency: user.currency || 'USD',
+                lastLogin: loginTime 
+            } 
         });
     } catch (err) {
         console.error('Login Error:', err.message);
@@ -126,7 +136,7 @@ app.get('/api/admin/users-stats', async (req, res) => {
 
 app.get('/api/admin/all-users', async (req, res) => {
     try {
-        const result = await db.query('SELECT id, name, email, role, currency, is_approved, created_at FROM users ORDER BY id DESC');
+        const result = await db.query('SELECT id, name, email, role, currency, is_approved, created_at, updated_at FROM users ORDER BY id DESC');
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch users' });

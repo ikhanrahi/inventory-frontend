@@ -41,9 +41,16 @@
             
             <div id="userInfo" class="hidden flex items-center gap-3">
                 <div class="text-right hidden sm:block">
-                    <p id="userName" class="font-bold text-sm text-slate-200"></p>
-                    <span id="userRole" class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold uppercase"></span>
-                    <span id="userCurrencyBadge" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase ml-1"></span>
+                    <div class="flex items-center justify-end gap-2 mb-0.5">
+                        <p id="userName" class="font-bold text-sm text-slate-100"></p>
+                        <span id="userRole" class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold uppercase"></span>
+                        <span id="userCurrencyBadge" class="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold uppercase"></span>
+                    </div>
+                    <!-- 🕒 ELEGANT LOGGED IN TIME BADGE -->
+                    <p class="text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5 font-medium shadow-sm">
+                        <i class="fa-solid fa-clock text-[10px] text-amber-400"></i>
+                        <span id="userLastLoginText">Logged in: Just now</span>
+                    </p>
                 </div>
                 <button onclick="logout()" class="bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all">
                     <i class="fa-solid fa-arrow-right-from-bracket sm:mr-1"></i> <span class="hidden sm:inline">Logout</span>
@@ -217,6 +224,7 @@
                                 <th class="p-3">Role</th>
                                 <th class="p-3">Currency</th>
                                 <th class="p-3">Approval Status</th>
+                                <th class="p-3">Last Logged In</th>
                                 <th class="p-3 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -225,7 +233,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: ENTERPRISE REPORTS SECTION (WITH 5 ITEMS PER PAGE PAGINATION) -->
+            <!-- TAB 3: ENTERPRISE REPORTS SECTION -->
             <div id="section-reports" class="admin-tab-content bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
@@ -282,7 +290,7 @@
                 </div>
             </div>
 
-            <!-- TAB 4: ADMIN SETTINGS SECTION (PASSCODE MANAGEMENT) -->
+            <!-- TAB 4: ADMIN SETTINGS SECTION -->
             <div id="section-settings" class="admin-tab-content bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden max-w-xl">
                 <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
                     <i class="fa-solid fa-key text-amber-400"></i> Admin Registration Secret Passcode
@@ -340,7 +348,7 @@
         let activeReportType = 'sales';
         let fullReportData = [];
         let reportCurrentPage = 1;
-        const reportRowsPerPage = 5; // 📄 Exactly 5 rows per page
+        const reportRowsPerPage = 5;
 
         let actualAdminPasscode = '';
         let isPasscodeRevealed = false;
@@ -348,6 +356,21 @@
         const CURRENCY_SYMBOLS = { 'BDT': '৳', 'USD': '$', 'EUR': '€', 'INR': '₹', 'GBP': '£' };
 
         function getCurrencySymbol(code) { return CURRENCY_SYMBOLS[code] || '$'; }
+
+        // 🕒 ELEGANT DATE & TIME FORMATTER (Day, Month, Date, Year, Time)
+        function formatDateTime(isoString) {
+            if (!isoString) return 'N/A';
+            const d = new Date(isoString);
+            return d.toLocaleString('en-US', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
 
         function showToast(message, type = 'success') {
             Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true, background: '#1e293b', color: '#f8fafc' }).fire({ icon: type, title: message });
@@ -424,7 +447,6 @@
 
         function logout() { localStorage.clear(); location.reload(); }
 
-        // 🧭 SWITCH ADMIN TAB MENU
         function switchAdminTab(tabName) {
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => btn.className = 'nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2');
@@ -445,6 +467,10 @@
             document.getElementById('userName').innerText = user.name;
             document.getElementById('userRole').innerText = user.role;
             document.getElementById('userCurrencyBadge').innerText = user.currency || 'USD';
+
+            // 🕒 Render Logged In Date & Time Header Display
+            const loginFormatted = formatDateTime(user.lastLogin || new Date().toISOString());
+            document.getElementById('userLastLoginText').innerText = `Logged: ${loginFormatted}`;
 
             if (user.role === 'ADMIN') {
                 document.getElementById('adminNavMenu').classList.remove('hidden');
@@ -528,6 +554,7 @@
                 tbody.innerHTML = '';
 
                 users.forEach(u => {
+                    const loginTimeStr = formatDateTime(u.updated_at || u.created_at);
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-700/30">
                             <td class="p-3 font-semibold">${u.name}</td>
@@ -535,6 +562,7 @@
                             <td class="p-3"><span class="${u.role === 'ADMIN' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-700 text-slate-300'} text-xs font-bold px-2 py-0.5 rounded-full">${u.role}</span></td>
                             <td class="p-3 font-bold text-emerald-400">${u.currency || 'USD'}</td>
                             <td class="p-3"><span class="${u.is_approved ? 'text-emerald-400' : 'text-amber-400'} font-bold text-xs">${u.is_approved ? 'Approved' : 'Pending'}</span></td>
+                            <td class="p-3 text-xs text-slate-300 font-mono"><i class="fa-solid fa-clock text-indigo-400 mr-1"></i>${loginTimeStr}</td>
                             <td class="p-3 text-right">
                                 <button onclick="openManageUserModal(${u.id}, '${u.role}', ${u.is_approved}, '${u.currency}')" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg" title="Edit Role & Approval"><i class="fa-solid fa-user-pen"></i></button>
                                 <button onclick="openChangePasswordModal(${u.id}, '${u.name.replace(/'/g, "\\'")}')" class="text-amber-400 hover:bg-amber-500/10 p-1.5 rounded-lg ml-1" title="Change Password"><i class="fa-solid fa-key"></i></button>
@@ -652,7 +680,6 @@
             }
         }
 
-        // 📊 ADVANCED REPORTS CONTROLLER (WITH 5 ROWS PAGINATION)
         async function loadReport(type) {
             activeReportType = type;
             reportCurrentPage = 1;
@@ -694,8 +721,8 @@
             const pageData = fullReportData.slice(startIdx, startIdx + reportRowsPerPage);
 
             if (activeReportType === 'sales') {
-                thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>Order ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total (${sym})</th><th>Date</th></tr>`;
-                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">#ORD-${r.sale_id}</td><td class="p-2.5 font-semibold">${r.customer_name}</td><td class="p-2.5">${r.product_name}</td><td class="p-2.5">${r.quantity} Pcs</td><td class="p-2.5 font-bold text-emerald-400">${sym}${r.total_amount}</td><td class="p-2.5 text-slate-400">${new Date(r.created_at).toLocaleDateString()}</td></tr>`);
+                thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>Order ID</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total (${sym})</th><th>Date & Time</th></tr>`;
+                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">#ORD-${r.sale_id}</td><td class="p-2.5 font-semibold">${r.customer_name}</td><td class="p-2.5">${r.product_name}</td><td class="p-2.5">${r.quantity} Pcs</td><td class="p-2.5 font-bold text-emerald-400">${sym}${r.total_amount}</td><td class="p-2.5 text-slate-400">${formatDateTime(r.created_at)}</td></tr>`);
             } else if (activeReportType === 'stocks') {
                 thead.innerHTML = `<tr class="border-b text-xs uppercase text-slate-400"><th>SKU</th><th>Product Name</th><th>Category</th><th>Selling Price</th><th>Cost Price</th><th>Stock Status</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2.5 text-indigo-400 font-mono">${r.sku}</td><td class="p-2.5 font-bold">${r.name}</td><td class="p-2.5">${r.category}</td><td class="p-2.5 text-emerald-400 font-bold">${sym}${r.price}</td><td class="p-2.5 text-slate-400">${sym}${r.cost_price}</td><td class="p-2.5 font-bold ${r.quantity <= 5 ? 'text-rose-400' : 'text-emerald-400'}">${r.quantity} Pcs</td></tr>`);
@@ -830,7 +857,7 @@
                         <td class="p-3 font-semibold">${o.product_name}</td>
                         <td class="p-3">${o.quantity} Pcs</td>
                         <td class="p-3 text-emerald-400 font-bold">${sym}${o.total_amount}</td>
-                        <td class="p-3 text-slate-400 text-xs">${new Date(o.created_at).toLocaleDateString()}</td>
+                        <td class="p-3 text-slate-400 text-xs">${formatDateTime(o.created_at)}</td>
                         <td class="p-3 text-right"><button onclick='downloadPDF(${JSON.stringify(o)})' class="bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg text-xs">📄 Invoice</button></td>
                     </tr>
                 `;
