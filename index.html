@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Inventory ERP</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- SweetAlert2 for Professional Popups & Toasts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .swal2-popup { background: #1e293b !important; color: #f8fafc !important; border: 1px solid rgba(51, 65, 85, 0.6) !important; border-radius: 1rem !important; }
@@ -425,8 +429,9 @@
                             <td class="p-3 font-bold text-emerald-400">${u.currency || 'USD'}</td>
                             <td class="p-3"><span class="${u.is_approved ? 'text-emerald-400' : 'text-amber-400'} font-bold text-xs">${u.is_approved ? 'Approved' : 'Pending'}</span></td>
                             <td class="p-3 text-right">
-                                <button onclick="openManageUserModal(${u.id}, '${u.role}', ${u.is_approved}, '${u.currency}')" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg"><i class="fa-solid fa-user-pen"></i> Edit</button>
-                                <button onclick="deleteUser(${u.id})" class="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg ml-2"><i class="fa-solid fa-trash"></i></button>
+                                <button onclick="openManageUserModal(${u.id}, '${u.role}', ${u.is_approved}, '${u.currency}')" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg" title="Edit Role & Approval"><i class="fa-solid fa-user-pen"></i></button>
+                                <button onclick="openChangePasswordModal(${u.id}, '${u.name.replace(/'/g, "\\'")}')" class="text-amber-400 hover:bg-amber-500/10 p-1.5 rounded-lg ml-1" title="Change Password"><i class="fa-solid fa-key"></i></button>
+                                <button onclick="deleteUser(${u.id})" class="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg ml-1" title="Delete User"><i class="fa-solid fa-trash"></i></button>
                             </td>
                         </tr>
                     `;
@@ -483,6 +488,51 @@
                     showToast('User permissions updated!', 'success');
                     loadUsersManagement();
                     loadAnalytics();
+                }
+            }
+        }
+
+        // 🔑 OPEN CHANGE PASSWORD MODAL FUNCTION
+        async function openChangePasswordModal(userId, userName) {
+            const { value: newPassword } = await Swal.fire({
+                title: `Change Password for ${userName}`,
+                html: `
+                    <div class="text-left space-y-2">
+                        <p class="text-xs text-slate-400">Enter a new secure password for this user (minimum 6 characters):</p>
+                        <input id="swal-new-password" type="password" placeholder="••••••••" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white">
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Update Password',
+                confirmButtonColor: '#d97706',
+                cancelButtonColor: '#475569',
+                preConfirm: () => {
+                    const pass = document.getElementById('swal-new-password').value;
+                    if (!pass || pass.length < 6) {
+                        Swal.showValidationMessage('Password must be at least 6 characters long');
+                        return false;
+                    }
+                    return pass;
+                }
+            });
+
+            if (newPassword) {
+                try {
+                    const res = await fetch(`${API_BASE}/admin/change-password/${userId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ newPassword })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok) {
+                        showToast(data.message, 'success');
+                    } else {
+                        showToast(data.message || 'Failed to change password', 'error');
+                    }
+                } catch (err) {
+                    showToast('Server Connection Error!', 'error');
                 }
             }
         }
