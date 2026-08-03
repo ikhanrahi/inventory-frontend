@@ -143,6 +143,18 @@ app.post('/api/products', async (req, res) => {
     }
 });
 
+// 🛠️ ৬. প্রোডাক্ট ডিলিট API (Delete Product - Admin Only)
+app.delete('/api/products/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await db.query('DELETE FROM products WHERE id = $1', [id]);
+        res.json({ message: 'Product deleted successfully!' });
+    } catch (err) {
+        console.error('Delete Product Error:', err.message);
+        res.status(500).json({ error: 'Failed to delete product. It might be linked to sales history.' });
+    }
+});
+
 // -------------------------------------------------------------
 // 🛒 SALES & PURCHASE ROUTES
 // -------------------------------------------------------------

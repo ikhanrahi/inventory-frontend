@@ -3,121 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Management System</title>
+    <title>Enterprise Inventory ERP</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- html2pdf Library for Invoice Generation -->
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans">
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-    <div class="container mx-auto p-6 max-w-5xl">
+    <!-- 🌐 MAIN CONTAINER -->
+    <div class="container mx-auto p-4 sm:p-6 max-w-6xl">
         
         <!-- HEADER -->
-        <header class="flex justify-between items-center bg-white p-6 rounded-lg shadow-md mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">📦 Inventory ERP</h1>
-            <div id="userInfo" class="hidden flex items-center gap-4">
-                <span id="userName" class="font-semibold text-blue-600"></span>
-                <span id="userRole" class="bg-gray-200 text-xs px-2 py-1 rounded uppercase font-bold"></span>
-                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Logout</button>
+        <header class="flex justify-between items-center bg-slate-800/80 border border-slate-700/50 p-4 sm:p-6 rounded-2xl shadow-xl backdrop-blur-md mb-8">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-boxes-stacked text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white">StockFlow <span class="text-indigo-400 text-xs font-semibold uppercase px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full">ERP</span></h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Inventory & Business Management</p>
+                </div>
+            </div>
+            
+            <div id="userInfo" class="hidden flex items-center gap-3">
+                <div class="text-right hidden sm:block">
+                    <p id="userName" class="font-bold text-sm text-slate-200"></p>
+                    <span id="userRole" class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold tracking-wider uppercase"></span>
+                </div>
+                <button onclick="logout()" class="bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/20 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200">
+                    <i class="fa-solid fa-arrow-right-from-bracket sm:mr-1"></i> <span class="hidden sm:inline">Logout</span>
+                </button>
             </div>
         </header>
 
-        <!-- 🔑 AUTH SECTION -->
-        <div id="authSection" class="bg-white p-8 rounded-lg shadow-md max-w-md mx-auto">
-            <div class="flex justify-around mb-6 border-b pb-2">
-                <button onclick="toggleAuth('login')" id="loginTabBtn" class="font-bold text-blue-600 border-b-2 border-blue-600 pb-1">Login</button>
-                <button onclick="toggleAuth('register')" id="registerTabBtn" class="font-bold text-gray-400 pb-1">Register</button>
+        <!-- 🔑 MODERN AUTH SECTION -->
+        <div id="authSection" class="my-12 max-w-md mx-auto">
+            <div class="bg-slate-800/90 border border-slate-700/60 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl"></div>
+
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-white mb-2">Welcome Back</h2>
+                    <p class="text-xs text-slate-400">Manage your business operations effortlessly</p>
+                </div>
+
+                <div class="flex bg-slate-900/60 p-1.5 rounded-xl mb-6 border border-slate-700/50">
+                    <button onclick="toggleAuth('login')" id="loginTabBtn" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-indigo-400 bg-slate-800 shadow-sm">Login</button>
+                    <button onclick="toggleAuth('register')" id="registerTabBtn" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Email Address</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-envelope absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                            <input type="email" id="loginEmail" placeholder="admin@inventory.com" class="w-full bg-slate-900/80 border border-slate-700/80 pl-9 pr-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                            <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-900/80 border border-slate-700/80 pl-9 pr-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-indigo-600/30 transition-all">Sign In</button>
+                </form>
+
+                <!-- Register Form -->
+                <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Full Name</label>
+                        <input type="text" id="regName" placeholder="John Doe" class="w-full bg-slate-900/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Email</label>
+                        <input type="email" id="regEmail" placeholder="user@company.com" class="w-full bg-slate-900/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Password</label>
+                        <input type="password" id="regPassword" placeholder="••••••••" class="w-full bg-slate-900/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all" required>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-400 mb-1 block">Account Role</label>
+                        <select id="regRole" class="w-full bg-slate-900/80 border border-slate-700/80 px-4 py-2.5 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-all">
+                            <option value="CUSTOMER">Customer Account</option>
+                            <option value="ADMIN">Admin Account</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all">Create Account</button>
+                </form>
             </div>
-
-            <!-- Login Form -->
-            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
-                <input type="email" id="loginEmail" placeholder="Email" class="w-full border p-2 rounded" required>
-                <input type="password" id="loginPassword" placeholder="Password" class="w-full border p-2 rounded" required>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded font-semibold">Login</button>
-            </form>
-
-            <!-- Register Form -->
-            <form id="registerForm" onsubmit="handleRegister(event)" class="space-y-4 hidden">
-                <input type="text" id="regName" placeholder="Full Name" class="w-full border p-2 rounded" required>
-                <input type="email" id="regEmail" placeholder="Email" class="w-full border p-2 rounded" required>
-                <input type="password" id="regPassword" placeholder="Password" class="w-full border p-2 rounded" required>
-                <select id="regRole" class="w-full border p-2 rounded">
-                    <option value="CUSTOMER">Customer Account</option>
-                    <option value="ADMIN">Admin Account</option>
-                </select>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded font-semibold">Register Account</button>
-            </form>
         </div>
 
         <!-- 📊 DASHBOARD SECTION -->
         <div id="dashboardSection" class="hidden space-y-6">
 
-            <!-- 📊 ADMIN ANALYTICS CARDS (Visible only to Admin) -->
-            <div id="analyticsSection" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
-                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Total Revenue</p>
-                    <h3 id="statRevenue" class="text-3xl font-bold text-gray-800 mt-2">$0.00</h3>
+            <!-- ADMIN ANALYTICS CARDS -->
+            <div id="analyticsSection" class="grid grid-cols-1 md:grid-cols-3 gap-5 hidden">
+                <div class="bg-slate-800/80 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Revenue</p>
+                            <h3 id="statRevenue" class="text-2xl font-black text-emerald-400 mt-1">$0.00</h3>
+                        </div>
+                        <div class="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 text-emerald-400">
+                            <i class="fa-solid fa-dollar-sign text-lg"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Total Products Sold</p>
-                    <h3 id="statSold" class="text-3xl font-bold text-gray-800 mt-2">0 Pcs</h3>
+
+                <div class="bg-slate-800/80 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Products Sold</p>
+                            <h3 id="statSold" class="text-2xl font-black text-indigo-400 mt-1">0 Pcs</h3>
+                        </div>
+                        <div class="bg-indigo-500/10 p-3 rounded-xl border border-indigo-500/20 text-indigo-400">
+                            <i class="fa-solid fa-chart-line text-lg"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
-                    <p class="text-gray-500 text-sm font-semibold uppercase">Low Stock Alerts</p>
-                    <h3 id="statLowStock" class="text-3xl font-bold text-red-600 mt-2">0 Items</h3>
+
+                <div class="bg-slate-800/80 border border-slate-700/50 p-5 rounded-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Low Stock Alerts</p>
+                            <h3 id="statLowStock" class="text-2xl font-black text-rose-400 mt-1">0 Items</h3>
+                        </div>
+                        <div class="bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 text-rose-400">
+                            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
+
             <!-- ADMIN ONLY: Add Product Form -->
-            <div id="adminPanel" class="bg-white p-6 rounded-lg shadow-md hidden">
-                <h2 class="text-xl font-bold mb-4 text-gray-700">➕ Add New Product (Admin Only)</h2>
-                <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" id="pName" placeholder="Product Name" class="border p-2 rounded" required>
-                    <input type="text" id="pSku" placeholder="SKU / Barcode" class="border p-2 rounded" required>
-                    <input type="number" id="pPrice" placeholder="Price ($)" class="border p-2 rounded" required>
-                    <input type="number" id="pQuantity" placeholder="Stock Quantity" class="border p-2 rounded" required>
-                    <button type="submit" class="md:col-span-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded font-semibold">+ Add Product to Database</button>
+            <div id="adminPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-plus-circle text-indigo-400"></i> Add New Stock Item
+                </h2>
+                <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" id="pName" placeholder="Product Name" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
+                    <input type="text" id="pSku" placeholder="SKU / Barcode" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
+                    <input type="number" id="pPrice" placeholder="Price ($)" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
+                    <input type="number" id="pQuantity" placeholder="Stock Qty" class="bg-slate-900/80 border border-slate-700 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-500" required>
+                    <button type="submit" class="md:col-span-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-sm shadow-md transition-all">+ Add Product to Database</button>
                 </form>
             </div>
 
-            <!-- PRODUCT LIST -->
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-bold mb-4 text-gray-700">📦 Available Inventory Stock</h2>
+            <!-- PRODUCT LIST + SEARCH & FILTER -->
+            <div class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-xl">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-box text-indigo-400"></i> Available Inventory Stock
+                    </h2>
+                    
+                    <!-- 🔍 Real-Time Search Bar -->
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
+                        <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search product or SKU..." class="w-full bg-slate-900/90 border border-slate-700/80 pl-9 pr-4 py-2 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-100 border-b">
+                            <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
                                 <th class="p-3">SKU</th>
                                 <th class="p-3">Product Name</th>
                                 <th class="p-3">Price</th>
                                 <th class="p-3">Available Stock</th>
-                                <th class="p-3">Action</th>
+                                <th class="p-3 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody id="productTableBody">
+                        <tbody id="productTableBody" class="divide-y divide-slate-700/50 text-sm">
                             <!-- Loaded via JS -->
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- CUSTOMER ONLY: My Orders Section -->
-            <div id="customerOrdersPanel" class="bg-white p-6 rounded-lg shadow-md hidden">
-                <h2 class="text-xl font-bold mb-4 text-gray-700">📜 My Purchase History</h2>
+            <!-- CUSTOMER PURCHASE HISTORY -->
+            <div id="customerOrdersPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-indigo-400"></i> My Purchase History
+                </h2>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-100 border-b">
+                            <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
                                 <th class="p-3">Order ID</th>
                                 <th class="p-3">Product</th>
                                 <th class="p-3">Quantity</th>
                                 <th class="p-3">Total Cost</th>
                                 <th class="p-3">Date</th>
-                                <th class="p-3">Invoice</th>
+                                <th class="p-3 text-right">Invoice</th>
                             </tr>
                         </thead>
-                        <tbody id="ordersTableBody">
+                        <tbody id="ordersTableBody" class="divide-y divide-slate-700/50 text-sm">
                             <!-- Loaded via JS -->
                         </tbody>
                     </table>
@@ -131,6 +225,7 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
+        let allProducts = [];
 
         window.onload = () => {
             const user = JSON.parse(localStorage.getItem('user'));
@@ -143,9 +238,13 @@
             if (type === 'login') {
                 document.getElementById('loginForm').classList.remove('hidden');
                 document.getElementById('registerForm').classList.add('hidden');
+                document.getElementById('loginTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-indigo-400 bg-slate-800 shadow-sm';
+                document.getElementById('registerTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200';
             } else {
                 document.getElementById('loginForm').classList.add('hidden');
                 document.getElementById('registerForm').classList.remove('hidden');
+                document.getElementById('registerTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-indigo-400 bg-slate-800 shadow-sm';
+                document.getElementById('loginTabBtn').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-slate-400 hover:text-slate-200';
             }
         }
 
@@ -234,34 +333,61 @@
 
         async function loadProducts(user) {
             const res = await fetch(`${API_BASE}/products`);
-            const products = await res.json();
-            
+            allProducts = await res.json();
+            renderProductTable(allProducts, user);
+        }
+
+        function renderProductTable(products, user) {
             const tbody = document.getElementById('productTableBody');
             tbody.innerHTML = '';
+
+            if (products.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center p-6 text-slate-500">No products found.</td></tr>`;
+                return;
+            }
 
             products.forEach(p => {
                 const isOutOfStock = p.quantity <= 0;
                 tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-3 font-mono text-sm">${p.sku}</td>
-                        <td class="p-3 font-semibold">${p.name}</td>
-                        <td class="p-3 text-green-600 font-bold">$${p.price}</td>
-                        <td class="p-3 ${p.quantity <= 5 ? 'text-red-500 font-bold' : ''}">${p.quantity} Pcs</td>
+                    <tr class="hover:bg-slate-700/30 transition-all">
+                        <td class="p-3 font-mono text-xs text-indigo-400 font-bold">${p.sku}</td>
+                        <td class="p-3 font-semibold text-slate-200">${p.name}</td>
+                        <td class="p-3 text-emerald-400 font-bold">$${p.price}</td>
                         <td class="p-3">
+                            <span class="${p.quantity <= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700/50 text-slate-300'} text-xs font-bold px-2.5 py-1 rounded-full">
+                                ${p.quantity} Pcs
+                            </span>
+                        </td>
+                        <td class="p-3 text-right">
                             ${user.role === 'CUSTOMER' 
                                 ? `
-                                    <div class="flex items-center gap-2">
-                                        <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-16 border p-1 text-center rounded" ${isOutOfStock ? 'disabled' : ''}>
-                                        <button onclick="buyProduct(${p.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-semibold ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}" ${isOutOfStock ? 'disabled' : ''}>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-14 bg-slate-900 border border-slate-700 p-1 text-center rounded-lg text-xs" ${isOutOfStock ? 'disabled' : ''}>
+                                        <button onclick="buyProduct(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg text-xs font-semibold shadow-md ${isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''}" ${isOutOfStock ? 'disabled' : ''}>
                                             ${isOutOfStock ? 'Out of Stock' : 'Buy Now'}
                                         </button>
                                     </div>
                                   `
-                                : `<span class="text-xs text-gray-400">Admin Managed</span>`}
+                                : `
+                                    <button onclick="deleteProduct(${p.id})" class="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1.5 rounded-lg transition-all" title="Delete Product">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                  `}
                         </td>
                     </tr>
                 `;
             });
+        }
+
+        // 🔍 Real-time Search Filter
+        function filterProducts() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const user = JSON.parse(localStorage.getItem('user'));
+            const filtered = allProducts.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                p.sku.toLowerCase().includes(query)
+            );
+            renderProductTable(filtered, user);
         }
 
         async function buyProduct(productId) {
@@ -293,6 +419,23 @@
             }
         }
 
+        async function deleteProduct(productId) {
+            if (!confirm('Are you sure you want to delete this product?')) return;
+            
+            const user = JSON.parse(localStorage.getItem('user'));
+            const res = await fetch(`${API_BASE}/products/${productId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await res.json();
+            alert(data.message || data.error);
+
+            if (res.ok) {
+                loadProducts(user);
+                if (user.role === 'ADMIN') loadAnalytics();
+            }
+        }
+
         async function loadCustomerOrders(customerId) {
             const res = await fetch(`${API_BASE}/sales/customer/${customerId}`);
             const orders = await res.json();
@@ -301,7 +444,7 @@
             tbody.innerHTML = '';
 
             if (orders.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-gray-400">No purchase history found.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-slate-500">No purchase history found.</td></tr>`;
                 return;
             }
 
@@ -310,14 +453,14 @@
                 const orderData = JSON.stringify(o).replace(/"/g, '&quot;');
                 
                 tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50 text-sm">
-                        <td class="p-3 font-mono">#ORD-${o.sale_id}</td>
-                        <td class="p-3 font-semibold">${o.product_name}</td>
-                        <td class="p-3">${o.quantity} Pcs</td>
-                        <td class="p-3 text-green-600 font-bold">$${o.total_amount}</td>
-                        <td class="p-3 text-gray-500">${date}</td>
-                        <td class="p-3">
-                            <button onclick="downloadPDF(${orderData})" class="bg-gray-800 hover:bg-black text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                    <tr class="hover:bg-slate-700/30 transition-all">
+                        <td class="p-3 font-mono text-xs text-indigo-400">#ORD-${o.sale_id}</td>
+                        <td class="p-3 font-semibold text-slate-200">${o.product_name}</td>
+                        <td class="p-3 text-slate-300">${o.quantity} Pcs</td>
+                        <td class="p-3 text-emerald-400 font-bold">$${o.total_amount}</td>
+                        <td class="p-3 text-slate-400 text-xs">${date}</td>
+                        <td class="p-3 text-right">
+                            <button onclick="downloadPDF(${orderData})" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-2.5 py-1 rounded-lg text-xs">
                                 📄 Invoice
                             </button>
                         </td>
@@ -377,26 +520,26 @@
     </script>
 
     <!-- 🧾 INVOICE TEMPLATE -->
-    <div id="invoiceTemplate" class="hidden p-8 bg-white text-gray-800 font-sans" style="width: 700px;">
+    <div id="invoiceTemplate" class="hidden p-8 bg-white text-slate-800 font-sans" style="width: 700px;">
         <div class="flex justify-between items-center border-b pb-4 mb-6">
             <div>
                 <h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1>
-                <p class="text-sm text-gray-500">Enterprise Inventory ERP</p>
+                <p class="text-sm text-slate-500">StockFlow ERP System</p>
             </div>
             <div class="text-right">
-                <p id="invDate" class="text-sm text-gray-600"></p>
-                <p id="invNumber" class="font-bold font-mono text-gray-800"></p>
+                <p id="invDate" class="text-sm text-slate-600"></p>
+                <p id="invNumber" class="font-bold font-mono text-slate-800"></p>
             </div>
         </div>
 
         <div class="mb-6">
-            <h3 class="text-xs uppercase font-bold text-gray-400 mb-1">Billed To:</h3>
+            <h3 class="text-xs uppercase font-bold text-slate-400 mb-1">Billed To:</h3>
             <p id="invCustomerName" class="font-semibold text-lg"></p>
         </div>
 
         <table class="w-full text-left border-collapse mb-6">
             <thead>
-                <tr class="border-b-2 border-gray-200 bg-gray-50">
+                <tr class="border-b-2 border-slate-200 bg-slate-50">
                     <th class="py-2 px-3 text-sm font-bold">Product Name</th>
                     <th class="py-2 px-3 text-sm font-bold text-center">Qty</th>
                     <th class="py-2 px-3 text-sm font-bold text-right">Unit Price</th>
@@ -408,14 +551,14 @@
                     <td id="invProductName" class="py-3 px-3"></td>
                     <td id="invQty" class="py-3 px-3 text-center"></td>
                     <td id="invUnitPrice" class="py-3 px-3 text-right"></td>
-                    <td id="invTotal" class="py-3 px-3 text-right font-bold text-green-600"></td>
+                    <td id="invTotal" class="py-3 px-3 text-right font-bold text-emerald-600"></td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="border-t pt-4 text-center text-xs text-gray-400">
+        <div class="border-t pt-4 text-center text-xs text-slate-400">
             <p>Thank you for your business!</p>
-            <p>Generated automatically via Enterprise Inventory System</p>
+            <p>Generated automatically via StockFlow ERP</p>
         </div>
     </div>
 </body>
