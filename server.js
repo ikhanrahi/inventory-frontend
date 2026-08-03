@@ -122,16 +122,21 @@ app.get('/api/products', async (req, res) => {
 
 // ৫. নতুন প্রোডাক্ট অ্যাড
 app.post('/api/products', async (req, res) => {
-    const { name, sku, quantity, price, alert_quantity } = req.body;
+    let { name, sku, quantity, price } = req.body;
 
-    if (!name || !sku || !price) {
-        return res.status(400).json({ message: 'Name, SKU, and Price are required!' });
+    if (!name || !price) {
+        return res.status(400).json({ message: 'Name and Price are required!' });
+    }
+
+    // If SKU is empty, auto generate unique SKU
+    if (!sku || sku.trim() === '') {
+        sku = 'SKU-' + Math.floor(100000 + Math.random() * 900000);
     }
 
     try {
         const newProduct = await db.query(
             'INSERT INTO products (name, sku, quantity, price, alert_quantity) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [name, sku, quantity || 0, price, alert_quantity || 5]
+            [name, sku, quantity || 0, price, 5]
         );
 
         res.status(201).json({
@@ -139,6 +144,7 @@ app.post('/api/products', async (req, res) => {
             product: newProduct.rows[0]
         });
     } catch (err) {
+        console.error('Add Product Error:', err.message);
         res.status(500).json({ error: 'Database query error' });
     }
 });
