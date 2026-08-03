@@ -22,15 +22,14 @@
         .swal2-title {
             color: #f8fafc !important;
         }
-        /* Mobile-safe Invoice Rendering Positioning */
+        /* Hidden off-screen positioning for html2pdf canvas capture */
         #invoiceTemplate {
-            position: fixed;
-            top: -9999px;
+            position: absolute;
             left: -9999px;
+            top: -9999px;
             width: 700px !important;
             background: #ffffff !important;
             color: #1e293b !important;
-            z-index: -9999;
         }
     </style>
 </head>
@@ -157,8 +156,8 @@
             </div>
 
             <!-- 📈 ADMIN ONLY: Sales Report & CSV Export Section -->
-            <div id="reportSection" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden space-y-4">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div id="reportSection" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
                         <i class="fa-solid fa-file-csv text-indigo-400"></i> Sales Date-Range Report
                     </h2>
@@ -180,25 +179,6 @@
                     <button onclick="fetchSalesReport()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold transition-all">
                         Filter Report Data
                     </button>
-                </div>
-
-                <!-- Live Report Table -->
-                <div class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
-                                <th class="p-2.5">Order ID</th>
-                                <th class="p-2.5">Customer</th>
-                                <th class="p-2.5">Product</th>
-                                <th class="p-2.5">Qty</th>
-                                <th class="p-2.5">Total</th>
-                                <th class="p-2.5">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reportTableBody" class="divide-y divide-slate-700/50 text-xs">
-                            <tr><td colspan="6" class="text-center p-4 text-slate-500">Click "Filter Report Data" to load report.</td></tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
@@ -417,31 +397,11 @@
                 const res = await fetch(url);
                 currentReportData = await res.json();
 
-                const tbody = document.getElementById('reportTableBody');
-                tbody.innerHTML = '';
-
                 if (!Array.isArray(currentReportData) || currentReportData.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center p-4 text-slate-500">No sales records found.</td></tr>`;
                     showToast('No sales records found', 'info');
-                    return;
+                } else {
+                    showToast(`Loaded ${currentReportData.length} sales record(s)! Ready to export.`, 'success');
                 }
-
-                currentReportData.forEach(r => {
-                    const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString() : 'N/A';
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-slate-700/30 transition-all">
-                            <td class="p-2.5 font-mono text-indigo-400">#ORD-${r.sale_id}</td>
-                            <td class="p-2.5 font-semibold text-slate-200">${r.customer_name || 'Customer'}</td>
-                            <td class="p-2.5 text-slate-300">${r.product_name || 'Product'}</td>
-                            <td class="p-2.5 text-slate-300">${r.quantity || 0} Pcs</td>
-                            <td class="p-2.5 text-emerald-400 font-bold">$${r.total_amount || 0}</td>
-                            <td class="p-2.5 text-slate-400">${dateStr}</td>
-                        </tr>
-                    `;
-                });
-
-                showToast(`Loaded ${currentReportData.length} sales record(s)!`, 'success');
-
             } catch (err) {
                 console.error('Fetch Sales Report Error:', err);
                 showToast('Failed to fetch sales report!', 'error');
@@ -651,12 +611,13 @@
             }
         }
 
-        function downloadPDF(order) {
+        // 📱 Fixed Async Delay PDF Generator
+        async function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
 
             document.getElementById('invDate').innerText = `Date: ${new Date(order.created_at).toLocaleDateString()}`;
             document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
-            document.getElementById('invCustomerName').innerText = user.name;
+            document.getElementById('invCustomerName').innerText = user ? user.name : 'Customer';
             document.getElementById('invProductName').innerText = order.product_name;
             document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
             document.getElementById('invUnitPrice').innerText = `$${order.unit_price}`;
@@ -664,26 +625,30 @@
 
             const element = document.getElementById('invoiceTemplate');
 
+            showToast('Generating Invoice PDF...', 'info');
+
+            // Wait 150ms to ensure DOM render before canvas snapshot
+            await new Promise(resolve => setTimeout(resolve, 150));
+
             const opt = {
                 margin:       0.3,
                 filename:     `Invoice_ORD_${order.sale_id}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
+                html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, logging: false },
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            showToast('Generating Invoice PDF...', 'info');
-
-            html2pdf().set(opt).from(element).save().then(() => {
+            try {
+                await html2pdf().set(opt).from(element).save();
                 showToast('Invoice PDF downloaded!', 'success');
-            }).catch(err => {
+            } catch (err) {
                 console.error('PDF Error:', err);
                 showToast('Failed to download PDF', 'error');
-            });
+            }
         }
     </script>
 
-    <!-- 🧾 INVOICE TEMPLATE -->
+    <!-- 🧾 INVOICE TEMPLATE (Positioned Absolute Off-Screen) -->
     <div id="invoiceTemplate" class="p-8 font-sans">
         <div class="flex justify-between items-center border-b pb-4 mb-6">
             <div>
