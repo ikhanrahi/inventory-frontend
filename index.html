@@ -413,7 +413,6 @@
             }
         }
 
-        // 🟢 SHOWS TABLE ONLY UPON FILTERING
         async function fetchSalesReport() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
@@ -430,7 +429,6 @@
                 currentReportData = await res.json();
                 currentPage = 1;
                 
-                // Show table container only when filtered
                 document.getElementById('reportTableContainer').classList.remove('hidden');
                 renderReportTable();
 
@@ -555,14 +553,83 @@
                                     </div>
                                   `
                                 : `
-                                    <button onclick="deleteProduct(${p.id})" class="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1.5 rounded-lg transition-all" title="Delete Product">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
+                                    <div class="flex justify-end gap-2">
+                                        <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.quantity})" class="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 p-1.5 rounded-lg transition-all" title="Edit Product">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        <button onclick="deleteProduct(${p.id})" class="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1.5 rounded-lg transition-all" title="Delete Product">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
                                   `}
                         </td>
                     </tr>
                 `;
             });
+        }
+
+        // ⚙️ EDIT PRODUCT MODAL FUNCTION
+        async function openEditModal(id, currentName, currentSku, currentPrice, currentQuantity) {
+            const { value: formValues } = await Swal.fire({
+                title: 'Edit Product Details',
+                html: `
+                    <div class="space-y-3 text-left">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">Product Name</label>
+                            <input id="swal-name" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white" value="${currentName}">
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1">SKU / Barcode</label>
+                            <input id="swal-sku" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white" value="${currentSku}">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-slate-400 block mb-1">Price ($)</label>
+                                <input id="swal-price" type="number" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white" value="${currentPrice}">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-400 block mb-1">Stock Quantity</label>
+                                <input id="swal-qty" type="number" class="swal2-input !m-0 !w-full bg-slate-900 border-slate-700 text-sm text-white" value="${currentQuantity}">
+                            </div>
+                        </div>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'Save Changes',
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#475569',
+                preConfirm: () => {
+                    return {
+                        name: document.getElementById('swal-name').value,
+                        sku: document.getElementById('swal-sku').value,
+                        price: document.getElementById('swal-price').value,
+                        quantity: document.getElementById('swal-qty').value
+                    }
+                }
+            });
+
+            if (formValues) {
+                try {
+                    const res = await fetch(`${API_BASE}/products/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formValues)
+                    });
+
+                    const data = await res.json();
+                    if (res.ok) {
+                        showToast('Product updated successfully!', 'success');
+                        const user = JSON.parse(localStorage.getItem('user'));
+                        loadProducts(user);
+                        if (user.role === 'ADMIN') loadAnalytics();
+                    } else {
+                        showToast(data.message || 'Update failed', 'error');
+                    }
+                } catch (err) {
+                    showToast('Failed to connect to server', 'error');
+                }
+            }
         }
 
         function filterProducts() {
@@ -688,7 +755,7 @@
             }
         }
 
-        // 📱 FIXED PDF GENERATOR (In-DOM Rendered Container)
+        // 📱 FIXED PDF GENERATOR
         async function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
 
