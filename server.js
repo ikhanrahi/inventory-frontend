@@ -265,6 +265,39 @@ app.get('/api/admin/analytics', async (req, res) => {
     }
 });
 
+// -------------------------------------------------------------
+// 📈 SALES REPORT & CSV EXPORT ROUTE
+// -------------------------------------------------------------
+
+app.get('/api/admin/sales-report', async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    try {
+        let query = `
+            SELECT s.id as sale_id, u.name as customer_name, p.name as product_name, 
+                   si.quantity, si.unit_price, s.total_amount, s.created_at
+            FROM sales s
+            JOIN users u ON s.customer_id = u.id
+            JOIN sale_items si ON s.id = si.sale_id
+            JOIN products p ON si.product_id = p.id
+        `;
+
+        const params = [];
+        if (startDate && endDate) {
+            query += ` WHERE s.created_at >= $1 AND s.created_at <= $2`;
+            params.push(startDate, endDate + ' 23:59:59');
+        }
+
+        query += ` ORDER BY s.id DESC`;
+
+        const result = await db.query(query, params);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Report Error:', err.message);
+        res.status(500).json({ error: 'Failed to generate report' });
+    }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`📡 Server running on http://localhost:${PORT}`);
 });
