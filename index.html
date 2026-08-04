@@ -187,7 +187,16 @@
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
-                            <thead><tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40"><th class="p-3">SKU</th><th class="p-3">Product</th><th class="p-3">Category</th><th class="p-3">Location</th><th class="p-3">Price</th><th class="p-3">Stock</th><th class="p-3 text-right">Action</th></tr></thead>
+                            <thead>
+                                <tr id="productTableHeaderRow" class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
+                                    <th class="p-3">SKU</th>
+                                    <th class="p-3">Product</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Location</th>
+                                    <th class="p-3">Price</th>
+                                    <th class="p-3">Stock</th>
+                                    </tr>
+                            </thead>
                             <tbody id="productTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody>
                         </table>
                     </div>
@@ -665,10 +674,34 @@
             if (!user) user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
             const tb = document.getElementById('productTableBody');
+            const headerRow = document.getElementById('productTableHeaderRow');
             tb.innerHTML = '';
 
+            // Dynamically show Action header ONLY for ADMIN
+            if (user.role === 'ADMIN') {
+                headerRow.innerHTML = `
+                    <th class="p-3">SKU</th>
+                    <th class="p-3">Product</th>
+                    <th class="p-3">Category</th>
+                    <th class="p-3">Location</th>
+                    <th class="p-3">Price</th>
+                    <th class="p-3">Stock</th>
+                    <th class="p-3 text-right">Action</th>
+                `;
+            } else {
+                headerRow.innerHTML = `
+                    <th class="p-3">SKU</th>
+                    <th class="p-3">Product</th>
+                    <th class="p-3">Category</th>
+                    <th class="p-3">Location</th>
+                    <th class="p-3">Price</th>
+                    <th class="p-3">Stock</th>
+                `;
+            }
+
             if (!currentFilteredProducts || currentFilteredProducts.length === 0) {
-                tb.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No inventory products found.</td></tr>`;
+                const colSpan = user.role === 'ADMIN' ? 7 : 6;
+                tb.innerHTML = `<tr><td colspan="${colSpan}" class="p-4 text-center text-slate-500">No inventory products found.</td></tr>`;
                 document.getElementById('prodPageInfo').innerText = `Page 0 of 0`;
                 document.getElementById('btnProdPrev').disabled = true;
                 document.getElementById('btnProdNext').disabled = true;
@@ -680,7 +713,27 @@
             const pageData = currentFilteredProducts.slice(startIdx, startIdx + prodsPerPage);
 
             pageData.forEach(p => {
-                tb.innerHTML += `<tr class="hover:bg-slate-700/35"><td class="p-3 font-mono text-xs text-indigo-400">${p.sku}</td><td class="p-3 font-semibold">${p.name}</td><td class="p-3 text-xs text-slate-300">${p.category}</td><td class="p-3 text-xs font-mono text-amber-400">${p.location}</td><td class="p-3 text-emerald-400 font-bold">${sym}${p.price}</td><td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.quantity<=5?'bg-rose-500/10 text-rose-400':'bg-slate-700'}">${p.quantity} Pcs</span></td><td class="p-3 text-right">${user.role==='CUSTOMER'?`<span class="text-xs text-slate-500 font-medium">Read Only</span>`:`<button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price}, '${p.category}', '${p.brand}', '${p.supplier}', '${p.location}', '${p.expiry_date?p.expiry_date.slice(0,10):''}', ${p.quantity})" class="text-indigo-400 p-1.5"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteProduct(${p.id})" class="text-rose-400 p-1.5 ml-1"><i class="fa-solid fa-trash-can"></i></button>`}</td></tr>`;
+                let rowHtml = `
+                    <tr class="hover:bg-slate-700/35">
+                        <td class="p-3 font-mono text-xs text-indigo-400">${p.sku}</td>
+                        <td class="p-3 font-semibold">${p.name}</td>
+                        <td class="p-3 text-xs text-slate-300">${p.category}</td>
+                        <td class="p-3 text-xs font-mono text-amber-400">${p.location}</td>
+                        <td class="p-3 text-emerald-400 font-bold">${sym}${p.price}</td>
+                        <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.quantity<=5?'bg-rose-500/10 text-rose-400':'bg-slate-700'}">${p.quantity} Pcs</span></td>
+                `;
+
+                if (user.role === 'ADMIN') {
+                    rowHtml += `
+                        <td class="p-3 text-right">
+                            <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price}, '${p.category}', '${p.brand}', '${p.supplier}', '${p.location}', '${p.expiry_date?p.expiry_date.slice(0,10):''}', ${p.quantity})" class="text-indigo-400 p-1.5"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteProduct(${p.id})" class="text-rose-400 p-1.5 ml-1"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    `;
+                }
+
+                rowHtml += `</tr>`;
+                tb.innerHTML += rowHtml;
             });
 
             document.getElementById('prodPageInfo').innerText = `Page ${prodCurrentPage} of ${totalPages} (${currentFilteredProducts.length} Products)`;
