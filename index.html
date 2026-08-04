@@ -99,6 +99,7 @@
             <div id="adminNavMenu" class="flex flex-wrap gap-2 bg-slate-800/90 border border-slate-700/60 p-2 rounded-2xl shadow-lg hidden">
                 <button onclick="switchAdminTab('pos')" id="nav-pos" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md flex items-center gap-2"><i class="fa-solid fa-cash-register"></i> POS Billing</button>
                 <button onclick="switchAdminTab('inventory')" id="nav-inventory" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2"><i class="fa-solid fa-boxes-stacked"></i> Dashboard & Inventory</button>
+                <button onclick="switchAdminTab('dues')" id="nav-dues" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2"><i class="fa-solid fa-scale-unbalanced text-amber-400"></i> Due Ledger (বাকির হিসাব)</button>
                 <button onclick="switchAdminTab('users')" id="nav-users" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2"><i class="fa-solid fa-users-gear"></i> User Management</button>
                 <button onclick="switchAdminTab('reports')" id="nav-reports" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2"><i class="fa-solid fa-chart-pie"></i> Enterprise Reports</button>
                 <button onclick="switchAdminTab('settings')" id="nav-settings" class="nav-btn px-4 py-2 rounded-xl text-xs font-bold text-slate-400 hover:text-white flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> Admin Settings</button>
@@ -129,11 +130,15 @@
                         </div>
                     </div>
                     <div class="border-t border-slate-700/80 pt-4 space-y-3">
-                        <div class="flex justify-between text-xs">
+                        <div class="flex justify-between text-xs items-center">
                             <span class="text-slate-400">Payment Method:</span>
-                            <select id="posPaymentMethod" class="bg-slate-900 border border-slate-700 text-xs text-emerald-400 px-2 py-0.5 rounded-lg font-bold">
+                            <select id="posPaymentMethod" class="bg-slate-900 border border-slate-700 text-xs text-emerald-400 px-2 py-1 rounded-lg font-bold">
                                 <option value="Cash">Cash</option><option value="Card">Card</option><option value="Bkash">Bkash</option>
                             </select>
+                        </div>
+                        <div class="flex justify-between text-xs items-center">
+                            <span class="text-slate-400">Paid Amount (টাকা জমা):</span>
+                            <input type="number" id="posPaidAmountInput" placeholder="Leave empty for Full Pay" class="w-32 bg-slate-900 border border-slate-700 text-xs text-emerald-400 px-2 py-1 rounded-lg text-right font-bold">
                         </div>
                         <div class="flex justify-between items-center text-sm font-bold text-white">
                             <span>Total Amount:</span>
@@ -149,10 +154,10 @@
             <div id="section-inventory" class="admin-tab-content space-y-6">
                 <div id="analyticsSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 hidden">
                     <div class="bg-slate-800/85 border border-slate-700/50 p-4 rounded-2xl"><p class="text-[10px] font-bold text-slate-400 uppercase">Total Revenue</p><h3 id="statRevenue" class="text-xl font-black text-emerald-400 mt-1">0.00</h3></div>
+                    <div class="bg-slate-800/85 border border-slate-700/50 p-4 rounded-2xl"><p class="text-[10px] font-bold text-slate-400 uppercase">Total Dues (মোট বাকি)</p><h3 id="statDue" class="text-xl font-black text-amber-400 mt-1">0.00</h3></div>
                     <div class="bg-slate-800/85 border border-slate-700/50 p-4 rounded-2xl"><p class="text-[10px] font-bold text-slate-400 uppercase">Low Stock</p><h3 id="statLowStock" class="text-xl font-black text-rose-400 mt-1">0 Items</h3></div>
                     <div class="bg-slate-800/85 border border-slate-700/50 p-4 rounded-2xl"><p class="text-[10px] font-bold text-slate-400 uppercase">Total Admins</p><h3 id="statAdmins" class="text-xl font-black text-indigo-400 mt-1">0</h3></div>
                     <div class="bg-slate-800/85 border border-slate-700/50 p-4 rounded-2xl"><p class="text-[10px] font-bold text-slate-400 uppercase">Customers</p><h3 id="statCustomers" class="text-xl font-black text-sky-400 mt-1">0</h3></div>
-                    <div class="bg-slate-800/85 border border-slate-700/50 p-4 rounded-2xl"><p class="text-[10px] font-bold text-slate-400 uppercase">Pending Approvals</p><h3 id="statPending" class="text-xl font-black text-amber-400 mt-1">0</h3></div>
                 </div>
 
                 <div id="adminPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
@@ -189,6 +194,16 @@
                 </div>
             </div>
 
+            <div id="section-dues" class="admin-tab-content bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-scale-unbalanced text-amber-400"></i> Customer Credit & Due Ledger (বাকির হিসাব)</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead><tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40"><th class="p-3">Customer Name</th><th class="p-3">Email</th><th class="p-3">Total Purchased</th><th class="p-3">Paid Amount</th><th class="p-3">Total Due (বকেয়া)</th><th class="p-3 text-right">Collect Payment</th></tr></thead>
+                        <tbody id="duesTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div id="section-users" class="admin-tab-content bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
                 <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-users-gear text-indigo-400"></i> User Management</h2>
                 <div class="overflow-x-auto">
@@ -216,7 +231,7 @@
                 <div id="dateFilterBox" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end bg-slate-900/40 p-3 rounded-xl border border-slate-700/30">
                     <div><label class="text-xs font-semibold text-slate-400 mb-1 block">Start Date</label><input type="date" id="startDate" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-xl text-xs text-slate-200"></div>
                     <div><label class="text-xs font-semibold text-slate-400 mb-1 block">End Date</label><input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-xl text-xs text-slate-200"></div>
-                    <button onclick="fetchSalesReport()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold">Filter Data</button>
+                    <button onclick="fetchSalesReport()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold">Filter Report Data</button>
                 </div>
                 <div id="printableReport" class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4 hidden">
                     <table class="w-full text-left border-collapse"><thead id="reportTableHeader"></thead><tbody id="reportTableBody" class="divide-y divide-slate-700/50 text-xs"></tbody></table>
@@ -243,8 +258,8 @@
             </div>
 
             <div id="customerOrdersPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
-                <h2 class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-receipt text-indigo-400 mr-2"></i>My Purchases</h2>
-                <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40"><th class="p-3">Order</th><th class="p-3">Product</th><th class="p-3">Qty</th><th class="p-3">Total</th><th class="p-3">Date</th><th class="p-3 text-right">Invoice</th></tr></thead><tbody id="ordersTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody></table></div>
+                <h2 class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-receipt text-indigo-400 mr-2"></i>My Purchases & Dues</h2>
+                <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40"><th class="p-3">Order</th><th class="p-3">Product</th><th class="p-3">Qty</th><th class="p-3">Total Cost</th><th class="p-3">Paid</th><th class="p-3">Due Status</th><th class="p-3">Date</th><th class="p-3 text-right">Invoice</th></tr></thead><tbody id="ordersTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody></table></div>
             </div>
         </div>
     </div>
@@ -265,7 +280,7 @@
 
     <script>
         const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
-        let allProducts = [], activeReportType = 'sales', fullReportData = [], reportCurrentPage = 1, reportRowsPerPage = 10;
+        let allProducts = [], activeReportType = 'sales', fullReportData = [], reportCurrentPage = 1, reportRowsPerPage = 5;
         let posCart = [], actualAdminPasscode = '', isPasscodeRevealed = false;
         const CURRENCY_SYMBOLS = { 'BDT': '৳', 'USD': '$', 'EUR': '€', 'INR': '₹', 'GBP': '£' };
 
@@ -318,6 +333,7 @@
             document.getElementById(`section-${tab}`).classList.remove('hidden');
             document.getElementById(`nav-${tab}`).className = 'nav-btn px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md flex items-center gap-2';
             if (tab === 'pos') renderPOSProductGrid();
+            if (tab === 'dues') loadDuesLedger();
             if (tab === 'users') loadUsersManagement();
             if (tab === 'reports') { document.getElementById('printableReport').classList.add('hidden'); document.getElementById('reportPaginationControls').classList.add('hidden'); }
             if (tab === 'settings') fetchAdminPasscode();
@@ -395,9 +411,10 @@
         }
 
         async function executePOSCheckout() {
-            if (posCart.length === 0) return showToast('Cart is empty!', 'error');
+            if (posCart.length === 0) return showToast('Cart is empty', 'error');
             const user = JSON.parse(localStorage.getItem('user'));
             const payMethod = document.getElementById('posPaymentMethod').value;
+            const paidVal = document.getElementById('posPaidAmountInput').value;
 
             try {
                 const res = await fetch(`${API_BASE}/pos/checkout`, {
@@ -406,32 +423,28 @@
                     body: JSON.stringify({
                         customer_id: user.id,
                         cart_items: posCart,
-                        payment_method: payMethod
+                        payment_method: payMethod,
+                        paid_amount: paidVal !== '' ? parseFloat(paidVal) : undefined
                     })
                 });
-
-                const data = await res.json();
+                const d = await res.json();
                 if (res.ok) {
-                    showToast('POS Receipt Generated!', 'success');
-                    printThermalPOSReceipt(data.saleId, posCart, data.totalAmount, payMethod, user);
+                    showToast('Checkout successful');
+                    printThermalPOSReceipt(d.saleId, posCart, d.totalAmount, d.paidAmount, d.dueAmount, payMethod, user);
                     posCart = [];
+                    document.getElementById('posPaidAmountInput').value = '';
                     renderPOSCart();
                     loadProducts(user);
                     loadAnalytics();
-                    if (user.role !== 'ADMIN') loadCustomerOrders(user.id); // 🔄 Live update for customer history
-                } else {
-                    showToast(data.message || 'Checkout failed', 'error');
-                }
-            } catch (err) { 
-                showToast('POS System Error!', 'error'); 
-            }
+                } else { showToast(d.message || 'Failed', 'error'); }
+            } catch { showToast('Error', 'error'); }
         }
 
-        function printThermalPOSReceipt(saleId, items, total, payMethod, user) {
+        function printThermalPOSReceipt(saleId, items, total, paid, due, payMethod, user) {
             const sym = getCurrencySymbol(user.currency);
             let html = items.map(i => `<tr><td>${i.name} x${i.quantity}</td><td style="text-align:right;">${sym}${(i.price * i.quantity).toFixed(2)}</td></tr>`).join('');
             const w = window.open('', '', 'width=300,height=600');
-            w.document.write(`<html><body style="font-family:monospace; font-size:11px; width:260px; margin:0 auto; padding:10px;"><h3 style="text-align:center;margin:0;">StockFlow ERP</h3><p style="text-align:center;margin:2px 0;">Order #ORD-${saleId}</p><hr/><table>${html}</table><hr/><b>Total: ${sym}${total.toFixed(2)} (${payMethod})</b><body</html>`);
+            w.document.write(`<html><body style="font-family:monospace; font-size:11px; width:260px; margin:0 auto; padding:10px;"><h3 style="text-align:center;margin:0;">StockFlow ERP</h3><p style="text-align:center;margin:2px 0;">Order #ORD-${saleId}</p><hr/><table>${html}</table><hr/><b>Total: ${sym}${total.toFixed(2)}</b><br/>Paid: ${sym}${paid.toFixed(2)}<br/>Due: ${sym}${due.toFixed(2)} (${payMethod})</body></html>`);
             w.document.close(); w.print();
         }
 
@@ -460,10 +473,54 @@
             const [aRes, uRes] = await Promise.all([fetch(`${API_BASE}/admin/analytics`), fetch(`${API_BASE}/admin/users-stats`)]);
             const stats = await aRes.json(); const uStats = await uRes.json();
             document.getElementById('statRevenue').innerText = `${sym}${stats.totalRevenue.toFixed(2)}`;
+            document.getElementById('statDue').innerText = `${sym}${stats.totalDue.toFixed(2)}`;
             document.getElementById('statLowStock').innerText = `${stats.lowStockCount} Items`;
             document.getElementById('statAdmins').innerText = uStats.totalAdmins;
             document.getElementById('statCustomers').innerText = uStats.totalCustomers;
-            document.getElementById('statPending').innerText = uStats.pendingApprovals;
+        }
+
+        async function loadDuesLedger() {
+            const tb = document.getElementById('duesTableBody');
+            try {
+                const res = await fetch(`${API_BASE}/admin/dues-ledger`);
+                const dues = await res.json();
+                tb.innerHTML = '';
+                if (!dues.length) { tb.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No customer dues found! All clear! 🎉</td></tr>`; return; }
+                dues.forEach(d => {
+                    const sym = getCurrencySymbol(d.currency);
+                    const safeName = d.customer_name.replace(/'/g, "\\'");
+                    tb.innerHTML += `<tr class="hover:bg-slate-700/35"><td class="p-3 font-semibold text-white">${d.customer_name}</td><td class="p-3 text-slate-400">${d.email}</td><td class="p-3 text-slate-200">${sym}${parseFloat(d.total_purchased).toFixed(2)}</td><td class="p-3 text-emerald-400 font-bold">${sym}${parseFloat(d.total_paid).toFixed(2)}</td><td class="p-3 text-amber-400 font-black">${sym}${parseFloat(d.total_due).toFixed(2)}</td><td class="p-3 text-right"><button onclick="collectDuePayment(${d.customer_id}, '${safeName}', ${d.total_due})" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-md"><i class="fa-solid fa-hand-holding-dollar mr-1"></i> Collect Due</button></td></tr>`;
+                });
+            } catch { tb.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-400">Failed to load dues ledger.</td></tr>`; }
+        }
+
+        async function collectDuePayment(customerId, customerName, totalDue) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const sym = getCurrencySymbol(user.currency);
+
+            const { value: amountPaid } = await Swal.fire({
+                title: `Collect Due Payment`,
+                html: `<div class="text-left space-y-2"><p class="text-xs text-slate-300">Customer: <b>${customerName}</b></p><p class="text-xs text-amber-400">Total Outstanding Due: <b>${sym}${totalDue.toFixed(2)}</b></p><input id="swal-due-pay" type="number" step="0.01" placeholder="Enter Collected Amount (${sym})" class="swal2-input !m-0 !w-full bg-slate-900 text-sm text-white"></div>`,
+                showCancelButton: true, confirmButtonText: 'Collect Payment', confirmButtonColor: '#d97706',
+                preConfirm: () => {
+                    const val = parseFloat(document.getElementById('swal-due-pay').value);
+                    if (!val || val <= 0) { Swal.showValidationMessage('Please enter a valid amount!'); return false; }
+                    if (val > totalDue) { Swal.showValidationMessage(`Amount cannot exceed total due of ${sym}${totalDue.toFixed(2)}`); return false; }
+                    return val;
+                }
+            });
+
+            if (amountPaid) {
+                try {
+                    const res = await fetch(`${API_BASE}/admin/pay-due`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ customer_id: customerId, amount_paid: amountPaid })
+                    });
+                    const d = await res.json();
+                    if (res.ok) { showToast(d.message); loadDuesLedger(); loadAnalytics(); } else { showToast(d.message || 'Failed', 'error'); }
+                } catch { showToast('Server Error', 'error'); }
+            }
         }
 
         async function loadUsersManagement() {
@@ -502,6 +559,8 @@
             document.querySelectorAll('.report-tab').forEach(b => b.className = 'report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400');
             document.getElementById(`tab-${type}`).className = 'report-tab py-2 text-[11px] font-bold rounded-lg text-white bg-indigo-600';
             document.getElementById('dateFilterBox').classList.toggle('hidden', type !== 'sales');
+            document.getElementById('printableReport').classList.add('hidden');
+            document.getElementById('reportPaginationControls').classList.add('hidden');
             if (type !== 'sales') fetchSalesReport();
         }
 
@@ -524,8 +583,8 @@
             const pageData = fullReportData.slice((reportCurrentPage - 1) * reportRowsPerPage, reportCurrentPage * reportRowsPerPage);
 
             if (activeReportType === 'sales') {
-                thead.innerHTML = `<tr><th class="p-2">Order</th><th class="p-2">Customer</th><th class="p-2">Product</th><th class="p-2">Qty</th><th class="p-2">Total (${sym})</th><th class="p-2">Date</th></tr>`;
-                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2 text-indigo-400">#ORD-${r.sale_id}</td><td class="p-2">${r.customer_name}</td><td class="p-2">${r.product_name}</td><td class="p-2">${r.quantity}</td><td class="p-2 text-emerald-400 font-bold">${sym}${r.total_amount}</td><td class="p-2">${formatDateTime(r.created_at)}</td></tr>`);
+                thead.innerHTML = `<tr><th class="p-2">Order</th><th class="p-2">Customer</th><th class="p-2">Product</th><th class="p-2">Qty</th><th class="p-2">Total (${sym})</th><th class="p-2">Paid</th><th class="p-2">Due</th><th class="p-2">Date</th></tr>`;
+                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2 text-indigo-400">#ORD-${r.sale_id}</td><td class="p-2">${r.customer_name}</td><td class="p-2">${r.product_name}</td><td class="p-2">${r.quantity}</td><td class="p-2 font-bold text-white">${sym}${r.total_amount}</td><td class="p-2 text-emerald-400 font-bold">${sym}${parseFloat(r.paid_amount || r.total_amount).toFixed(2)}</td><td class="p-2 text-amber-400 font-bold">${sym}${parseFloat(r.due_amount || 0).toFixed(2)}</td><td class="p-2">${formatDateTime(r.created_at)}</td></tr>`);
             } else if (activeReportType === 'stocks' || activeReportType === 'lowstock') {
                 thead.innerHTML = `<tr><th class="p-2">SKU</th><th class="p-2">Name</th><th class="p-2">Category</th><th class="p-2">Price</th><th class="p-2">Stock</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2 text-indigo-400">${r.sku}</td><td class="p-2">${r.name}</td><td class="p-2">${r.category}</td><td class="p-2 text-emerald-400">${sym}${r.price}</td><td class="p-2 font-bold">${r.quantity}</td></tr>`);
@@ -539,8 +598,8 @@
                 thead.innerHTML = `<tr><th class="p-2">Category</th><th class="p-2">Items</th><th class="p-2">Stock</th><th class="p-2">Value</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2">${r.category}</td><td class="p-2">${r.total_items}</td><td class="p-2">${r.total_stock}</td><td class="p-2">${sym}${r.inventory_value}</td></tr>`);
             } else if (activeReportType === 'customer') {
-                thead.innerHTML = `<tr><th class="p-2">Name</th><th class="p-2">Email</th><th class="p-2">Orders</th><th class="p-2">Spent</th></tr>`;
-                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2">${r.name}</td><td class="p-2">${r.email}</td><td class="p-2">${r.total_orders}</td><td class="p-2 text-emerald-400">${sym}${r.total_spent}</td></tr>`);
+                thead.innerHTML = `<tr><th class="p-2">Name</th><th class="p-2">Email</th><th class="p-2">Orders</th><th class="p-2">Spent</th><th class="p-2">Total Due</th></tr>`;
+                pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2">${r.name}</td><td class="p-2">${r.email}</td><td class="p-2">${r.total_orders}</td><td class="p-2 text-emerald-400">${sym}${r.total_spent}</td><td class="p-2 text-amber-400 font-bold">${sym}${parseFloat(r.total_due || 0).toFixed(2)}</td></tr>`);
             }
             document.getElementById('reportPageInfo').innerText = `Page ${reportCurrentPage} of ${totalPages}`;
         }
@@ -582,22 +641,9 @@
         async function buyProduct(id) {
             const user = JSON.parse(localStorage.getItem('user'));
             const qty = parseInt(document.getElementById(`qty-${id}`).value);
-            const payMethodEl = document.getElementById(`payMethod-${id}`);
-            const payMethod = payMethodEl ? payMethodEl.value : 'Cash';
-
-            const res = await fetch(`${API_BASE}/sales`, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify({ customer_id: user.id, product_id: id, quantity: qty, payment_method: payMethod }) 
-            });
-
-            if (res.ok) { 
-                showToast('Purchase successful!', 'success'); 
-                loadProducts(user); 
-                loadCustomerOrders(user.id); // 🔄 Added live update for purchase history table
-            } else {
-                showToast('Purchase failed', 'error');
-            }
+            const pay = document.getElementById(`payMethod-${id}`).value;
+            const res = await fetch(`${API_BASE}/sales`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: user.id, product_id: id, quantity: qty, payment_method: pay }) });
+            if (res.ok) { showToast('Purchase successful'); loadProducts(user); loadCustomerOrders(user.id); } else { showToast('Failed', 'error'); }
         }
 
         async function deleteProduct(id) {
@@ -613,7 +659,10 @@
             const orders = await (await fetch(`${API_BASE}/sales/customer/${id}`)).json();
             const tb = document.getElementById('ordersTableBody'); tb.innerHTML = '';
             orders.forEach(o => {
-                tb.innerHTML += `<tr class="hover:bg-slate-700/35"><td class="p-3 font-mono text-indigo-400">#ORD-${o.sale_id}</td><td class="p-3 font-semibold">${o.product_name}</td><td class="p-3">${o.quantity}</td><td class="p-3 text-emerald-400 font-bold">${sym}${o.total_amount}</td><td class="p-3 text-xs text-slate-400">${formatDateTime(o.created_at)}</td><td class="p-3 text-right"><button onclick='downloadPDF(${JSON.stringify(o)})' class="bg-slate-700 px-2.5 py-1 rounded text-xs">Invoice</button></td></tr>`;
+                const paidAmt = parseFloat(o.paid_amount || o.total_amount);
+                const dueAmt = parseFloat(o.due_amount || 0);
+                const statusBadge = dueAmt > 0 ? `<span class="text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full text-xs">Due: ${sym}${dueAmt.toFixed(2)}</span>` : `<span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full text-xs">PAID</span>`;
+                tb.innerHTML += `<tr class="hover:bg-slate-700/35"><td class="p-3 font-mono text-indigo-400">#ORD-${o.sale_id}</td><td class="p-3 font-semibold">${o.product_name}</td><td class="p-3">${o.quantity}</td><td class="p-3 font-bold text-white">${sym}${parseFloat(o.total_amount).toFixed(2)}</td><td class="p-3 text-emerald-400">${sym}${paidAmt.toFixed(2)}</td><td class="p-3">${statusBadge}</td><td class="p-3 text-xs text-slate-400">${formatDateTime(o.created_at)}</td><td class="p-3 text-right"><button onclick='downloadPDF(${JSON.stringify(o)})' class="bg-slate-700 px-2.5 py-1 rounded text-xs">Invoice</button></td></tr>`;
             });
         }
 
@@ -624,43 +673,20 @@
             if (res.ok) { showToast('Added successfully'); e.target.reset(); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics(); }
         }
 
-      async function downloadPDF(order) {
+        async function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
-            
-            // Populate invoice details into the hidden template
             document.getElementById('invDate').innerText = `Date: ${formatDateOnly(order.created_at)}`;
             document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
-            document.getElementById('invCustomerName').innerText = user ? user.name : 'Customer';
+            document.getElementById('invCustomerName').innerText = user.name;
             document.getElementById('invProductName').innerText = order.product_name;
             document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
             document.getElementById('invUnitPrice').innerText = `${sym}${order.unit_price}`;
             document.getElementById('invTotal').innerText = `${sym}${order.total_amount}`;
-            
             showToast('Opening Invoice Window...');
-
-            // Create a clean print window view directly from the HTML template
             const invoiceHtml = document.getElementById('invoiceTemplate').outerHTML;
             const printWindow = window.open('', '', 'width=800,height=900');
-            
-            printWindow.document.write(`
-                <html>
-                <head>
-                    <title>Invoice_ORD_${order.sale_id}</title>
-                    <style>
-                        body { font-family: sans-serif; padding: 20px; color: #1e293b; background: #fff; }
-                    </style>
-                </head>
-                <body>
-                    ${invoiceHtml}
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                        }
-                    <\/script>
-                </body>
-                </html>
-            `);
+            printWindow.document.write(`<html><head><title>Invoice_ORD_${order.sale_id}</title><style>body { font-family: sans-serif; padding: 20px; color: #1e293b; background: #fff; }</style></head><body>${invoiceHtml}<script>window.onload = function() { window.print(); }<\/script></body></html>`);
             printWindow.document.close();
         }
     </script>
