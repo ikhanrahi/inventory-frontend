@@ -15,20 +15,19 @@ app.use(express.json());
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
 // 📧 FIXED NODEMAILER TRANSPORTER FOR RENDER CLOUD (Port 465 SSL)
+// 📧 IPv4 FORCED SMTP CONFIGURATION FOR RENDER
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // SSL
+    port: 587,
+    secure: false, // TLS
+    requireTLS: true,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 5000,
-    socketTimeout: 10000
+    family: 4, // 👈 FORCE IPv4 (Fixes ENETUNREACH Network Error on Render)
+    connectionTimeout: 15000,
+    socketTimeout: 15000
 });
 
 // Helper function to send low stock alert emails
