@@ -3,11 +3,9 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const dns = require('dns');
+const dns = require('dns').promises; // ONLY ONE DECLARATION HERE
 require('dotenv').config();
 const db = require('./db');
-
-dns.setDefaultResultOrder('ipv4first');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -17,31 +15,28 @@ app.use(express.json());
 
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
-// 📧 FIXED NODEMAILER TRANSPORTER WITH STRICT IPv4 DNS LOOKUP FOR RENDER
-const dns = require('dns').promises;
-
-// Helper function to resolve Gmail SMTP to an IPv4 IP address dynamically
+// 📧 Helper function to resolve Gmail SMTP to IPv4 dynamically & send email
 async function sendLowStockEmail(mailOptions) {
     let ipv4Host = 'smtp.gmail.com';
     try {
         const addresses = await dns.resolve4('smtp.gmail.com');
         if (addresses && addresses.length > 0) {
-            ipv4Host = addresses[0]; // Guaranteed IPv4 address (e.g. 142.250.x.x)
+            ipv4Host = addresses[0]; // Guaranteed IPv4 IP (e.g. 142.250.x.x)
         }
     } catch (dnsErr) {
         console.log("DNS Resolve Warning, falling back to hostname:", dnsErr.message);
     }
 
     const transporter = nodemailer.createTransport({
-        host: ipv4Host,checkAndSendLowStockAlert
+        host: ipv4Host,
         port: 465,
-        secure: true, // SSL
+        secure: true, // SSL for Port 465
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
         },
         tls: {
-            servername: 'smtp.gmail.com', // Required for SSL handshake with IP address
+            servername: 'smtp.gmail.com', // SSL Handshake compatibility
             rejectUnauthorized: false
         },
         connectionTimeout: 15000,
@@ -51,8 +46,6 @@ async function sendLowStockEmail(mailOptions) {
     return await transporter.sendMail(mailOptions);
 }
 
-// Helper function to send low stock alert emails
-// Helper function to send low stock alert emails
 // Helper function to send low stock alert emails
 async function checkAndSendLowStockAlert(productId) {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
@@ -95,6 +88,25 @@ async function checkAndSendLowStockAlert(productId) {
 
 app.get('/', (req, res) => {
     res.send('🚀 Enterprise Inventory System API is Running!');
+});
+
+// 🔔 ADMIN NOTIFICATIONS API
+app.get('/api/admin/notifications', async (req, res) => {
+    try {
+        const lowStockRes = await db.query('SELECT id, name, sku, quantity FROM products WHERE quantity <= 5 ORDER BY quantity ASC');
+        const pendingUsersRes = await db.query("SELECT id, name, email, role, created_at FROM users WHERE is_approved = FALSE ORDER BY id DESC");
+
+        const totalNotifications = lowStockRes.rows.length + pendingUsersRes.rows.length;
+
+        res.json({
+            totalCount: totalNotifications,
+            lowStockItems: lowStockRes.rows,
+            pendingUsers: pendingUsersRes.rows
+        });
+    } catch (err) {
+        console.error('Notification API Error:', err.message);
+        res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
 });
 
 // 🔐 AUTHENTICATION & APPROVAL ROUTES
@@ -449,7 +461,7 @@ app.get('/api/admin/analytics', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to fetch analytics' }); }
 });
 
-// 📊 REPORTS API WITH ALL TYPES INCLUDING PAYMENTS & BESTSELLERS
+// 📊 REPORTS API WITH ALL TYPES
 app.get('/api/admin/reports/:type', async (req, res) => {
     const { type } = req.params;
     const { startDate, endDate } = req.query;
