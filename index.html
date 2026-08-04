@@ -180,9 +180,19 @@
                 <div class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl shadow-xl">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-box text-indigo-400"></i> Inventory Stock</h2>
-                        <div class="relative w-full sm:w-64">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
-                            <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search..." class="w-full bg-slate-900 border border-slate-700 pl-9 pr-4 py-2 rounded-xl text-xs text-slate-200">
+                        
+                        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                            <button onclick="exportProductsCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-csv"></i> Export CSV
+                            </button>
+                            <button id="importCsvBtn" onclick="triggerCSVImportModal()" class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-md flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-import"></i> Import CSV
+                            </button>
+
+                            <div class="relative w-full sm:w-48">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
+                                <input type="text" id="searchInput" onkeyup="filterProducts()" placeholder="Search..." class="w-full bg-slate-900 border border-slate-700 pl-9 pr-4 py-2 rounded-xl text-xs text-slate-200">
+                            </div>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -401,6 +411,11 @@
             document.getElementById('userRole').innerText = user.role;
             document.getElementById('userCurrencyBadge').innerText = user.currency || 'USD';
             document.getElementById('userLastLoginText').innerText = `Logged: ${formatDateTime(user.lastLogin)}`;
+            
+            // Show/Hide Import button based on role
+            const importBtn = document.getElementById('importCsvBtn');
+            if (importBtn) importBtn.style.display = user.role === 'ADMIN' ? 'inline-flex' : 'none';
+
             if (user.role === 'ADMIN') {
                 document.getElementById('adminNavMenu').classList.remove('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
@@ -768,6 +783,116 @@
             if ((await Swal.fire({ title: 'Delete?', icon: 'warning', showCancelButton: true })).isConfirmed) {
                 await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
                 showToast('Deleted'); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics();
+            }
+        }
+
+        // 📤 EXPORT PRODUCTS TO CSV
+        function exportProductsCSV() {
+            if (!allProducts || allProducts.length === 0) return showToast('No products available to export!', 'error');
+
+            const headers = ["Name", "SKU", "Category", "Brand", "Supplier", "Location", "Cost Price", "Selling Price", "Stock Quantity", "Expiry Date"];
+            
+            const rows = allProducts.map(p => [
+                `"${(p.name || '').replace(/"/g, '""')}"`,
+                `"${p.sku || ''}"`,
+                `"${p.category || ''}"`,
+                `"${p.brand || ''}"`,
+                `"${p.supplier || ''}"`,
+                `"${p.location || ''}"`,
+                p.cost_price || 0,
+                p.price || 0,
+                p.quantity || 0,
+                p.expiry_date ? p.expiry_date.slice(0, 10) : ''
+            ]);
+
+            const csvContent = [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `StockFlow_Products_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('CSV Inventory Exported!');
+        }
+
+        // 📥 IMPORT PRODUCTS FROM CSV MODAL & PARSER
+        async function triggerCSVImportModal() {
+            const { value: file } = await Swal.fire({
+                title: 'Bulk Import Products (CSV)',
+                html: `
+                    <div class="text-left text-xs space-y-3">
+                        <p class="text-slate-300">Upload a CSV file with columns: <b>Name, SKU, Category, Brand, Supplier, Location, Cost Price, Selling Price, Quantity, Expiry Date</b></p>
+                        <p class="text-amber-400">💡 Tip: Click "Export CSV" first to get a sample CSV template!</p>
+                        <input id="swal-csv-file" type="file" accept=".csv" class="swal2-file bg-slate-900 text-xs text-slate-200">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Upload & Import',
+                confirmButtonColor: '#0284c7',
+                preConfirm: () => {
+                    const fileInput = document.getElementById('swal-csv-file');
+                    if (!fileInput.files || fileInput.files.length === 0) {
+                        Swal.showValidationMessage('Please select a valid CSV file!');
+                        return false;
+                    }
+                    return fileInput.files[0];
+                }
+            });
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function (e) {
+                    try {
+                        const text = e.target.result;
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                        if (lines.length <= 1) return showToast('CSV file is empty!', 'error');
+
+                        const productsToImport = [];
+                        for (let i = 1; i < lines.length; i++) {
+                            const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+                            if (cols.length < 2) continue;
+
+                            productsToImport.push({
+                                name: cols[0],
+                                sku: cols[1],
+                                category: cols[2],
+                                brand: cols[3],
+                                supplier: cols[4],
+                                location: cols[5],
+                                cost_price: parseFloat(cols[6]) || 0,
+                                price: parseFloat(cols[7]) || 0,
+                                quantity: parseInt(cols[8]) || 0,
+                                expiry_date: cols[9] || null
+                            });
+                        }
+
+                        if (productsToImport.length === 0) return showToast('No valid product records found in CSV!', 'error');
+
+                        showToast('Importing products...');
+                        const res = await fetch(`${API_BASE}/products/bulk`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ products: productsToImport })
+                        });
+
+                        const data = await res.json();
+                        if (res.ok) {
+                            showToast(data.message);
+                            loadProducts(JSON.parse(localStorage.getItem('user')));
+                            loadAnalytics();
+                        } else {
+                            showToast(data.message || 'Import failed', 'error');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showToast('Failed to parse CSV file!', 'error');
+                    }
+                };
+                reader.readAsText(file);
             }
         }
 
