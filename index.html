@@ -395,14 +395,36 @@
         }
 
         async function executePOSCheckout() {
-            if (posCart.length === 0) return showToast('Cart is empty', 'error');
+            if (posCart.length === 0) return showToast('Cart is empty!', 'error');
             const user = JSON.parse(localStorage.getItem('user'));
             const payMethod = document.getElementById('posPaymentMethod').value;
+
             try {
-                const res = await fetch(`${API_BASE}/pos/checkout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: user.id, cart_items: posCart, payment_method: payMethod }) });
-                const d = await res.json();
-                if (res.ok) { showToast('Checkout successful'); printThermalPOSReceipt(d.saleId, posCart, d.totalAmount, payMethod, user); posCart = []; renderPOSCart(); loadProducts(user); loadAnalytics(); } else { showToast(d.message || 'Failed', 'error'); }
-            } catch { showToast('Error', 'error'); }
+                const res = await fetch(`${API_BASE}/pos/checkout`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customer_id: user.id,
+                        cart_items: posCart,
+                        payment_method: payMethod
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('POS Receipt Generated!', 'success');
+                    printThermalPOSReceipt(data.saleId, posCart, data.totalAmount, payMethod, user);
+                    posCart = [];
+                    renderPOSCart();
+                    loadProducts(user);
+                    loadAnalytics();
+                    if (user.role !== 'ADMIN') loadCustomerOrders(user.id); // 🔄 Live update for customer history
+                } else {
+                    showToast(data.message || 'Checkout failed', 'error');
+                }
+            } catch (err) { 
+                showToast('POS System Error!', 'error'); 
+            }
         }
 
         function printThermalPOSReceipt(saleId, items, total, payMethod, user) {
@@ -560,9 +582,22 @@
         async function buyProduct(id) {
             const user = JSON.parse(localStorage.getItem('user'));
             const qty = parseInt(document.getElementById(`qty-${id}`).value);
-            const pay = document.getElementById(`payMethod-${id}`).value;
-            const res = await fetch(`${API_BASE}/sales`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: user.id, product_id: id, quantity: qty, payment_method: pay }) });
-            if (res.ok) { showToast('Purchase successful'); loadProducts(user); loadCustomerOrders(user.id); } else { showToast('Failed', 'error'); }
+            const payMethodEl = document.getElementById(`payMethod-${id}`);
+            const payMethod = payMethodEl ? payMethodEl.value : 'Cash';
+
+            const res = await fetch(`${API_BASE}/sales`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ customer_id: user.id, product_id: id, quantity: qty, payment_method: payMethod }) 
+            });
+
+            if (res.ok) { 
+                showToast('Purchase successful!', 'success'); 
+                loadProducts(user); 
+                loadCustomerOrders(user.id); // 🔄 Added live update for purchase history table
+            } else {
+                showToast('Purchase failed', 'error');
+            }
         }
 
         async function deleteProduct(id) {
