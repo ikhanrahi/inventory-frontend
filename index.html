@@ -18,6 +18,7 @@
             #printableReport, #posReceiptModal { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
         }
     </style>
+    // Developed By Imran Khan
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
@@ -599,15 +600,16 @@
                 });
                 const d = await res.json();
                 if (res.ok) {
-                    showToast('Checkout successful');
-                    printThermalPOSReceipt(d.saleId, posCart, d.totalAmount, d.paidAmount, d.dueAmount, payMethod, user);
-                    posCart = [];
-                    document.getElementById('posPaidAmountInput').value = '';
-                    renderPOSCart();
-                    loadProducts(user);
-                    loadAnalytics();
-                    fetchAdminNotifications();
-                } else { showToast(d.message || 'Failed', 'error'); }
+    showToast('Checkout successful');
+    printThermalPOSReceipt(d.saleId, posCart, d.totalAmount, d.paidAmount, d.dueAmount, payMethod, user);
+    posCart = [];
+    document.getElementById('posPaidAmountInput').value = '';
+    renderPOSCart();
+    loadProducts(user);
+    loadCustomerOrders(user.id); // 👈 এটি যুক্ত করুন (কাস্টমার প্যানলে অটোমেটিক আপডেট করার জন্য)
+    loadAnalytics();
+    fetchAdminNotifications();
+} else { showToast(d.message || 'Failed', 'error'); }
             } catch { showToast('Error', 'error'); }
         }
 
@@ -689,7 +691,7 @@
                         body: JSON.stringify({ customer_id: customerId, amount_paid: amountPaid })
                     });
                     const d = await res.json();
-                    if (res.ok) { showToast(d.message); loadDuesLedger(); loadAnalytics(); fetchAdminNotifications(); } else { showToast(d.message || 'Failed', 'error'); }
+                    if (res.ok) { showToast(d.message); loadDuesLedger(); loadAnalytics(); fetchAdminNotifications(); loadCustomerOrders(customerId); } else { showToast(d.message || 'Failed', 'error'); }
                 } catch { showToast('Server Error', 'error'); }
             }
         }
