@@ -18,25 +18,40 @@ app.use(express.json());
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
 // 📧 FIXED NODEMAILER TRANSPORTER WITH STRICT IPv4 DNS LOOKUP FOR RENDER
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // SSL for Port 465
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    // STRICTLY FORCES IPv4 DNS LOOKUP & COMPLETELY FIXES ENETUNREACH ON RENDER
-    lookup: (hostname, options, callback) => {
-        dns.lookup(hostname, { family: 4 }, callback);
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 15000,
-    socketTimeout: 15000
-});
+const dns = require('dns').promises;
 
+// Helper function to resolve Gmail SMTP to an IPv4 IP address dynamically
+async function sendLowStockEmail(mailOptions) {
+    let ipv4Host = 'smtp.gmail.com';
+    try {
+        const addresses = await dns.resolve4('smtp.gmail.com');
+        if (addresses && addresses.length > 0) {
+            ipv4Host = addresses[0]; // Guaranteed IPv4 address (e.g. 142.250.x.x)
+        }
+    } catch (dnsErr) {
+        console.log("DNS Resolve Warning, falling back to hostname:", dnsErr.message);
+    }
+
+    const transporter = nodemailer.createTransport({
+        host: ipv4Host,
+        port: 465,
+        secure: true, // SSL
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        },
+        tls: {
+            servername: 'smtp.gmail.com', // Required for SSL handshake with IP address
+            rejectUnauthorized: false
+        },
+        connectionTimeout: 15000,
+        socketTimeout: 15000
+    });
+
+    return await transporter.sendMail(mailOptions);
+}
+
+// Helper function to send low stock alert emails
 // Helper function to send low stock alert emails
 async function checkAndSendLowStockAlert(productId) {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
@@ -69,7 +84,7 @@ async function checkAndSendLowStockAlert(productId) {
                 `
             };
 
-            const info = await transporter.sendMail(mailOptions);
+            const info = await sendLowStockEmail(mailOptions);
             console.log(`🎉 Low Stock Email Sent Successfully! Message ID: ${info.messageId}`);
         }
     } catch (err) {
