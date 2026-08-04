@@ -191,6 +191,50 @@ app.post('/api/products', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Database error' }); }
 });
 
+// 📦 BULK PRODUCT IMPORT API
+app.post('/api/products/bulk', async (req, res) => {
+    const { products } = req.body;
+    if (!products || !Array.isArray(products) || products.length === 0) {
+        return res.status(400).json({ message: 'No valid products provided for import!' });
+    }
+
+    try {
+        let insertedCount = 0;
+        for (const item of products) {
+            let { name, sku, quantity, price, cost_price, category, brand, supplier, location, expiry_date } = item;
+            if (!name || !price) continue; // Skip invalid rows
+
+            if (!sku || sku.trim() === '') {
+                sku = 'SKU-' + Math.floor(100000 + Math.random() * 900000);
+            }
+
+            await db.query(
+                `INSERT INTO products (name, sku, quantity, price, cost_price, category, brand, supplier, location, expiry_date, alert_quantity) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+                [
+                    name,
+                    sku,
+                    parseInt(quantity) || 0,
+                    parseFloat(price) || 0,
+                    parseFloat(cost_price) || 0,
+                    category || 'General',
+                    brand || 'Generic',
+                    supplier || 'N/A',
+                    location || 'Main Stock',
+                    expiry_date || null,
+                    5
+                ]
+            );
+            insertedCount++;
+        }
+
+        res.status(201).json({ message: `Successfully imported ${insertedCount} products!`, count: insertedCount });
+    } catch (err) {
+        console.error('Bulk Import Error:', err.message);
+        res.status(500).json({ error: 'Failed to process bulk product import.' });
+    }
+});
+
 app.put('/api/products/:id', async (req, res) => {
     const { name, sku, price, cost_price, category, brand, supplier, location, expiry_date, quantity } = req.body;
     try {
@@ -374,6 +418,14 @@ app.get('/api/admin/reports/:type', async (req, res) => {
             query = `SELECT s.id as sale_id, COALESCE(u.name, 'Customer') as customer_name, COALESCE(p.name, 'Product') as product_name, si.quantity, si.unit_price, s.total_amount, COALESCE(s.paid_amount, s.total_amount) as paid_amount, COALESCE(s.due_amount, 0) as due_amount, COALESCE(s.payment_method, 'Cash') as payment_method, s.created_at FROM sales s LEFT JOIN users u ON s.customer_id = u.id LEFT JOIN sale_items si ON s.id = si.sale_id LEFT JOIN products p ON si.product_id = p.id`;
             if (startDate && endDate) { query += ` WHERE s.created_at >= $1 AND s.created_at <= $2`; params.push(startDate, endDate + ' 23:59:59'); }
             query += ` ORDER BY s.id DESC`;
+        } else if (type === 'dues') { // 👈 NEW DUE LEDGER BREAKDOWN REPORT
+            query = `SELECT s.id as sale_id, COALESCE(u.name, 'Customer') as customer_name, COALESCE(p.name, 'Product') as product_name, si.quantity, si.unit_price, s.total_amount, s.paid_amount, s.due_amount, s.created_at 
+                     FROM sales s 
+                     JOIN users u ON s.customer_id = u.id 
+                     JOIN sale_items si ON s.id = si.sale_id 
+                     JOIN products p ON si.product_id = p.id 
+                     WHERE s.due_amount > 0 
+                     ORDER BY s.id DESC`;
         } else if (type === 'stocks') {
             query = `SELECT id, name, sku, category, brand, supplier, location, expiry_date, price, cost_price, quantity FROM products ORDER BY quantity ASC`;
         } else if (type === 'lowstock') {
@@ -389,7 +441,7 @@ app.get('/api/admin/reports/:type', async (req, res) => {
         }
         const result = await db.query(query, params);
         res.json(result.rows);
-    } catch (err) { res.status(500).json({ error: 'Failed' }); }
+    } catch (err) { res.status(500).json({ error: 'Failed to generate report' }); }
 });
 
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
