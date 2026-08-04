@@ -17,8 +17,6 @@ app.use(express.json());
 
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
-const dns = require('dns');
-
 // 📧 FIXED NODEMAILER TRANSPORTER WITH STRICT IPv4 DNS LOOKUP FOR RENDER
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -28,7 +26,7 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    // 👈 THIS STRICTLY FORCES IPv4 DNS LOOKUP & COMPLETELY FIXES ENETUNREACH ON RENDER
+    // STRICTLY FORCES IPv4 DNS LOOKUP & COMPLETELY FIXES ENETUNREACH ON RENDER
     lookup: (hostname, options, callback) => {
         dns.lookup(hostname, { family: 4 }, callback);
     },
@@ -234,7 +232,7 @@ app.post('/api/products/bulk', async (req, res) => {
         let insertedCount = 0;
         for (const item of products) {
             let { name, sku, quantity, price, cost_price, category, brand, supplier, location, expiry_date } = item;
-            if (!name || !price) continue; // Skip invalid rows
+            if (!name || !price) continue;
 
             if (!sku || sku.trim() === '') {
                 sku = 'SKU-' + Math.floor(100000 + Math.random() * 900000);
@@ -286,7 +284,7 @@ app.delete('/api/products/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to delete product' }); }
 });
 
-// 🛒 POS & DUE / PARTIAL PAYMENT CHECKOUT
+// 🛒 POS & CHECKOUT
 app.post('/api/pos/checkout', async (req, res) => {
     const { customer_id, cart_items, payment_method, paid_amount } = req.body;
     if (!cart_items || cart_items.length === 0) return res.status(400).json({ message: 'Cart is empty!' });
@@ -374,8 +372,6 @@ app.post('/api/admin/pay-due', async (req, res) => {
 
     try {
         let remainingPayment = parseFloat(amount_paid);
-
-        // Fetch unpaid/partially paid sales for customer ordered by oldest first
         const salesRes = await db.query(
             'SELECT * FROM sales WHERE customer_id = $1 AND due_amount > 0 ORDER BY id ASC',
             [customer_id]
@@ -388,7 +384,6 @@ app.post('/api/admin/pay-due', async (req, res) => {
             const currentPaid = parseFloat(sale.paid_amount);
 
             if (remainingPayment >= currentDue) {
-                // Fully clear this sale's due
                 const newPaid = currentPaid + currentDue;
                 await db.query(
                     'UPDATE sales SET paid_amount = $1, due_amount = 0, payment_status = $2 WHERE id = $3',
@@ -396,7 +391,6 @@ app.post('/api/admin/pay-due', async (req, res) => {
                 );
                 remainingPayment -= currentDue;
             } else {
-                // Partially clear this sale's due
                 const newPaid = currentPaid + remainingPayment;
                 const newDue = currentDue - remainingPayment;
                 await db.query(
@@ -408,10 +402,8 @@ app.post('/api/admin/pay-due', async (req, res) => {
         }
 
         await db.query('INSERT INTO due_payments (customer_id, amount_paid) VALUES ($1, $2)', [customer_id, amount_paid]);
-
         res.json({ message: `Successfully collected due payment of ${amount_paid}!` });
     } catch (err) {
-        console.error('Due Pay Error:', err.message);
         res.status(500).json({ error: 'Failed to process due payment' });
     }
 });
@@ -441,6 +433,7 @@ app.get('/api/admin/analytics', async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to fetch analytics' }); }
 });
 
+// 📊 REPORTS API WITH ALL TYPES INCLUDING PAYMENTS & BESTSELLERS
 app.get('/api/admin/reports/:type', async (req, res) => {
     const { type } = req.params;
     const { startDate, endDate } = req.query;
@@ -452,23 +445,15 @@ app.get('/api/admin/reports/:type', async (req, res) => {
             query += ` ORDER BY s.id DESC`;
         } else if (type === 'dues') {
             query = `SELECT s.id as sale_id, COALESCE(u.name, 'Customer') as customer_name, COALESCE(p.name, 'Product') as product_name, si.quantity, si.unit_price, s.total_amount, s.paid_amount, s.due_amount, s.created_at 
-                     FROM sales s 
-                     JOIN users u ON s.customer_id = u.id 
-                     JOIN sale_items si ON s.id = si.sale_id 
-                     JOIN products p ON si.product_id = p.id 
-                     WHERE s.due_amount > 0 
-                     ORDER BY s.id DESC`;
-        } else if (type === 'bestsellers') { // 🏆 TOP SELLING BEST SELLERS REPORT
+                     FROM sales s JOIN users u ON s.customer_id = u.id JOIN sale_items si ON s.id = si.sale_id JOIN products p ON si.product_id = p.id 
+                     WHERE s.due_amount > 0 ORDER BY s.id DESC`;
+        } else if (type === 'payments' || type === 'paymentmethods') {
+            query = `SELECT COALESCE(payment_method, 'Cash') as payment_method, COUNT(id) as total_transactions, SUM(total_amount) as total_revenue, SUM(paid_amount) as total_collected, SUM(due_amount) as total_due 
+                     FROM sales GROUP BY payment_method ORDER BY total_revenue DESC`;
+        } else if (type === 'bestsellers') {
             query = `SELECT p.name as product_name, p.sku, p.category, SUM(si.quantity) as total_sold, SUM(si.quantity * si.unit_price) as total_revenue 
-                     FROM sale_items si 
-                     JOIN products p ON si.product_id = p.id 
-                     GROUP BY p.id, p.name, p.sku, p.category 
-                     ORDER BY total_sold DESC LIMIT 10`;
-        } else if (type === 'paymentmethods') { // 💳 PAYMENT METHOD BREAKDOWN REPORT
-            query = `SELECT COALESCE(payment_method, 'Cash') as payment_method, COUNT(id) as total_orders, SUM(total_amount) as total_revenue, SUM(paid_amount) as total_paid, SUM(due_amount) as total_due 
-                     FROM sales 
-                     GROUP BY payment_method 
-                     ORDER BY total_revenue DESC`;
+                     FROM sale_items si JOIN products p ON si.product_id = p.id 
+                     GROUP BY p.id, p.name, p.sku, p.category ORDER BY total_sold DESC LIMIT 10`;
         } else if (type === 'stocks') {
             query = `SELECT id, name, sku, category, brand, supplier, location, expiry_date, price, cost_price, quantity FROM products ORDER BY quantity ASC`;
         } else if (type === 'lowstock') {
