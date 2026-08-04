@@ -191,6 +191,14 @@
                             <tbody id="productTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody>
                         </table>
                     </div>
+
+                    <div id="productPaginationControls" class="flex justify-between items-center text-xs text-slate-400 pt-4 mt-2 border-t border-slate-700/50">
+                        <span id="prodPageInfo">Page 1 of 1</span>
+                        <div class="flex gap-2">
+                            <button onclick="changeProductPage(-1)" id="btnProdPrev" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-40">Previous</button>
+                            <button onclick="changeProductPage(1)" id="btnProdNext" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-40">Next</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -309,6 +317,11 @@
         let allProducts = [], activeReportType = 'sales', fullReportData = [], reportCurrentPage = 1, reportRowsPerPage = 5;
         let posCart = [], actualAdminPasscode = '', isPasscodeRevealed = false;
         
+        // Inventory Stock Pagination Variables
+        let currentFilteredProducts = [];
+        let prodCurrentPage = 1;
+        const prodsPerPage = 10; // Maximum 10 products per page
+
         // Customer Orders Pagination Variables
         let fullCustomerOrders = [];
         let custOrderCurrentPage = 1;
@@ -639,20 +652,54 @@
         function changeReportPage(d) { reportCurrentPage += d; renderPaginatedReport(); }
         function printCurrentReport() { window.print(); }
 
+        // Load Products with Pagination
         async function loadProducts(user) {
             allProducts = await (await fetch(`${API_BASE}/products`)).json();
-            renderProductTable(allProducts, user);
+            currentFilteredProducts = [...allProducts];
+            prodCurrentPage = 1;
+            renderProductTable(user);
             renderPOSProductGrid();
         }
 
-        function renderProductTable(products, user) {
+        function renderProductTable(user) {
+            if (!user) user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
             const tb = document.getElementById('productTableBody');
             tb.innerHTML = '';
-            products.forEach(p => {
+
+            if (!currentFilteredProducts || currentFilteredProducts.length === 0) {
+                tb.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No inventory products found.</td></tr>`;
+                document.getElementById('prodPageInfo').innerText = `Page 0 of 0`;
+                document.getElementById('btnProdPrev').disabled = true;
+                document.getElementById('btnProdNext').disabled = true;
+                return;
+            }
+
+            const totalPages = Math.ceil(currentFilteredProducts.length / prodsPerPage);
+            const startIdx = (prodCurrentPage - 1) * prodsPerPage;
+            const pageData = currentFilteredProducts.slice(startIdx, startIdx + prodsPerPage);
+
+            pageData.forEach(p => {
                 const out = p.quantity <= 0;
                 tb.innerHTML += `<tr class="hover:bg-slate-700/35"><td class="p-3 font-mono text-xs text-indigo-400">${p.sku}</td><td class="p-3 font-semibold">${p.name}</td><td class="p-3 text-xs text-slate-300">${p.category}</td><td class="p-3 text-xs font-mono text-amber-400">${p.location}</td><td class="p-3 text-emerald-400 font-bold">${sym}${p.price}</td><td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.quantity<=5?'bg-rose-500/10 text-rose-400':'bg-slate-700'}">${p.quantity} Pcs</span></td><td class="p-3 text-right">${user.role==='CUSTOMER'?`<div class="flex items-center justify-end gap-2"><select id="payMethod-${p.id}" class="bg-slate-900 border border-slate-700 text-xs text-white p-1 rounded"><option value="Cash">Cash</option><option value="Card">Card</option><option value="Bkash">Bkash</option></select><input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-12 bg-slate-900 border border-slate-700 p-1 text-center text-xs" ${out?'disabled':''}><button onclick="buyProduct(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded text-xs ${out?'opacity-50':''}" ${out?'disabled':''}>Buy</button></div>`:`<button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price}, '${p.category}', '${p.brand}', '${p.supplier}', '${p.location}', '${p.expiry_date?p.expiry_date.slice(0,10):''}', ${p.quantity})" class="text-indigo-400 p-1.5"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteProduct(${p.id})" class="text-rose-400 p-1.5 ml-1"><i class="fa-solid fa-trash-can"></i></button>`}</td></tr>`;
             });
+
+            document.getElementById('prodPageInfo').innerText = `Page ${prodCurrentPage} of ${totalPages} (${currentFilteredProducts.length} Products)`;
+            document.getElementById('btnProdPrev').disabled = prodCurrentPage === 1;
+            document.getElementById('btnProdNext').disabled = prodCurrentPage === totalPages;
+        }
+
+        function changeProductPage(dir) {
+            prodCurrentPage += dir;
+            renderProductTable();
+        }
+
+        function filterProducts() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const user = JSON.parse(localStorage.getItem('user'));
+            currentFilteredProducts = allProducts.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.brand && p.brand.toLowerCase().includes(q)));
+            prodCurrentPage = 1;
+            renderProductTable(user);
         }
 
         async function openEditModal(id, name, sku, price, cost, cat, brand, sup, loc, exp, qty) {
@@ -663,11 +710,6 @@
                 preConfirm: () => ({ name: document.getElementById('e-name').value, sku: document.getElementById('e-sku').value, price: document.getElementById('e-price').value, cost_price: cost, category: cat, brand: brand, supplier: sup, location: loc, expiry_date: exp, quantity: document.getElementById('e-qty').value })
             });
             if (v) { await fetch(`${API_BASE}/products/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }); showToast('Updated'); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics(); }
-        }
-
-        function filterProducts() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            renderProductTable(allProducts.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)), JSON.parse(localStorage.getItem('user')));
         }
 
         async function buyProduct(id) {
@@ -717,7 +759,7 @@
                 const dueAmt = parseFloat(o.due_amount || 0);
                 const statusBadge = dueAmt > 0 
                     ? `<span class="text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full text-xs">Due: ${sym}${dueAmt.toFixed(2)}</span>` 
-                    : `<span class="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full text-xs">PAID</span>`;
+                    : `<span class="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-xs">PAID</span>`;
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-700/35">
