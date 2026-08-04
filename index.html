@@ -593,36 +593,90 @@
             const user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
             
-            // Populate invoice template fields
-            document.getElementById('invDate').innerText = `Date: ${formatDateOnly(order.created_at)}`;
-            document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
-            document.getElementById('invCustomerName').innerText = user ? user.name : 'Customer';
-            document.getElementById('invProductName').innerText = order.product_name;
-            document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
-            document.getElementById('invUnitPrice').innerText = `${sym}${order.unit_price}`;
-            document.getElementById('invTotal').innerText = `${sym}${order.total_amount}`;
-            
             showToast('Generating PDF...');
-            
-            // Small delay to ensure DOM is fully populated
-            await new Promise(r => setTimeout(r, 400));
-            
-            const element = document.getElementById('invoiceTemplate');
-            
-            const opt = {
-                margin:       0.3,
-                filename:     `Invoice_ORD_${order.sale_id}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false, windowWidth: 800 },
-                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
-            };
 
-            html2pdf().from(element).set(opt).save().then(() => {
-                showToast('Invoice downloaded successfully!');
-            }).catch(err => {
-                console.error(err);
-                showToast('Failed to generate PDF', 'error');
+            // Using pure jsPDF to draw a clean, professional invoice directly without canvas bugs
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'in',
+                format: 'letter'
             });
+
+            // Set font styles and colors
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.setTextColor(79, 70, 229); // Indigo color
+            doc.text("INVOICE", 0.5, 0.8);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(100, 116, 139); // Slate color
+            doc.text("StockFlow ERP System", 0.5, 1.05);
+
+            // Invoice Metadata (Right side)
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(30, 41, 59);
+            doc.text(`Invoice #ORD-${order.sale_id}`, 7.5, 0.8, { align: "right" });
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Date: ${formatDateOnly(order.created_at)}`, 7.5, 1.05, { align: "right" });
+
+            // Divider Line
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.02);
+            doc.line(0.5, 1.3, 7.5, 1.3);
+
+            // Billed To Section
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9);
+            doc.setTextColor(148, 163, 184);
+            doc.text("BILLED TO:", 0.5, 1.6);
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.setTextColor(30, 41, 59);
+            doc.text(user ? user.name : 'Customer', 0.5, 1.85);
+
+            // Table Header Background
+            doc.setFillColor(241, 245, 249);
+            doc.rect(0.5, 2.2, 7.0, 0.4, "F");
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(51, 65, 85);
+            doc.text("Product Name", 0.7, 2.45);
+            doc.text("Qty", 4.2, 2.45, { align: "center" });
+            doc.text("Unit Price", 5.6, 2.45, { align: "right" });
+            doc.text("Total", 7.3, 2.45, { align: "right" });
+
+            // Table Item Row
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.setTextColor(30, 41, 59);
+            doc.text(order.product_name, 0.7, 2.9);
+            doc.text(`${order.quantity} Pcs`, 4.2, 2.9, { align: "center" });
+            doc.text(`${sym}${order.unit_price}`, 5.6, 2.9, { align: "right" });
+
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(5, 150, 105); // Emerald green
+            doc.text(`${sym}${order.total_amount}`, 7.3, 2.9, { align: "right" });
+
+            // Table Bottom Divider
+            doc.line(0.5, 3.2, 7.5, 3.2);
+
+            // Footer Note
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.setTextColor(148, 163, 184);
+            doc.text("Thank you for your business! - Powered by StockFlow ERP", 4.0, 10.2, { align: "center" });
+
+            // Save PDF
+            doc.save(`Invoice_ORD_${order.sale_id}.pdf`);
+            showToast('Invoice PDF downloaded successfully!');
         }
     </script>
 </body>
