@@ -14,22 +14,34 @@ app.use(express.json());
 
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
+// 📧 FIXED NODEMAILER TRANSPORTER FOR RENDER CLOUD (Port 465 SSL)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true,
+    secure: true, // SSL
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    tls: { rejectUnauthorized: false }
+    tls: {
+        rejectUnauthorized: false
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000
 });
 
+// Helper function to send low stock alert emails
 async function checkAndSendLowStockAlert(productId) {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.log("ℹ️ Email notification skipped: EMAIL_USER or EMAIL_PASS not set in Environment Variables.");
+        return;
+    }
+
     try {
         const res = await db.query('SELECT * FROM products WHERE id = $1', [productId]);
         if (res.rows.length === 0) return;
+
         const product = res.rows[0];
         if (product.quantity <= 5) {
             const mailOptions = {
@@ -48,13 +60,12 @@ async function checkAndSendLowStockAlert(productId) {
                     </div>
                 `
             };
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) console.error('Email Error:', error.message);
-                else console.log('Email sent:', info.response);
-            });
+            
+            await transporter.sendMail(mailOptions);
+            console.log(`📧 Low stock email alert sent successfully for: ${product.name}`);
         }
     } catch (err) {
-        console.error('Email System Error:', err.message);
+        console.error('Email Dispatch Error:', err.message);
     }
 }
 
