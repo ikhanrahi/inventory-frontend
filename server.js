@@ -418,7 +418,7 @@ app.get('/api/admin/reports/:type', async (req, res) => {
             query = `SELECT s.id as sale_id, COALESCE(u.name, 'Customer') as customer_name, COALESCE(p.name, 'Product') as product_name, si.quantity, si.unit_price, s.total_amount, COALESCE(s.paid_amount, s.total_amount) as paid_amount, COALESCE(s.due_amount, 0) as due_amount, COALESCE(s.payment_method, 'Cash') as payment_method, s.created_at FROM sales s LEFT JOIN users u ON s.customer_id = u.id LEFT JOIN sale_items si ON s.id = si.sale_id LEFT JOIN products p ON si.product_id = p.id`;
             if (startDate && endDate) { query += ` WHERE s.created_at >= $1 AND s.created_at <= $2`; params.push(startDate, endDate + ' 23:59:59'); }
             query += ` ORDER BY s.id DESC`;
-        } else if (type === 'dues') { // 👈 NEW DUE LEDGER BREAKDOWN REPORT
+        } else if (type === 'dues') {
             query = `SELECT s.id as sale_id, COALESCE(u.name, 'Customer') as customer_name, COALESCE(p.name, 'Product') as product_name, si.quantity, si.unit_price, s.total_amount, s.paid_amount, s.due_amount, s.created_at 
                      FROM sales s 
                      JOIN users u ON s.customer_id = u.id 
@@ -426,6 +426,17 @@ app.get('/api/admin/reports/:type', async (req, res) => {
                      JOIN products p ON si.product_id = p.id 
                      WHERE s.due_amount > 0 
                      ORDER BY s.id DESC`;
+        } else if (type === 'bestsellers') { // 🏆 TOP SELLING BEST SELLERS REPORT
+            query = `SELECT p.name as product_name, p.sku, p.category, SUM(si.quantity) as total_sold, SUM(si.quantity * si.unit_price) as total_revenue 
+                     FROM sale_items si 
+                     JOIN products p ON si.product_id = p.id 
+                     GROUP BY p.id, p.name, p.sku, p.category 
+                     ORDER BY total_sold DESC LIMIT 10`;
+        } else if (type === 'paymentmethods') { // 💳 PAYMENT METHOD BREAKDOWN REPORT
+            query = `SELECT COALESCE(payment_method, 'Cash') as payment_method, COUNT(id) as total_orders, SUM(total_amount) as total_revenue, SUM(paid_amount) as total_paid, SUM(due_amount) as total_due 
+                     FROM sales 
+                     GROUP BY payment_method 
+                     ORDER BY total_revenue DESC`;
         } else if (type === 'stocks') {
             query = `SELECT id, name, sku, category, brand, supplier, location, expiry_date, price, cost_price, quantity FROM products ORDER BY quantity ASC`;
         } else if (type === 'lowstock') {
