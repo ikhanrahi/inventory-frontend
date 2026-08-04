@@ -589,20 +589,40 @@
             if (res.ok) { showToast('Added successfully'); e.target.reset(); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics(); }
         }
 
-        async function downloadPDF(order) {
+      async function downloadPDF(order) {
             const user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
+            
+            // Populate invoice template fields
             document.getElementById('invDate').innerText = `Date: ${formatDateOnly(order.created_at)}`;
             document.getElementById('invNumber').innerText = `Invoice #ORD-${order.sale_id}`;
-            document.getElementById('invCustomerName').innerText = user.name;
+            document.getElementById('invCustomerName').innerText = user ? user.name : 'Customer';
             document.getElementById('invProductName').innerText = order.product_name;
             document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
             document.getElementById('invUnitPrice').innerText = `${sym}${order.unit_price}`;
             document.getElementById('invTotal').innerText = `${sym}${order.total_amount}`;
+            
             showToast('Generating PDF...');
-            await new Promise(r => setTimeout(r, 200));
-            await html2pdf().set({ margin: 0.3, filename: `Invoice_${order.sale_id}.pdf`, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter' } }).from(document.getElementById('invoiceTemplate')).save();
-            showToast('Downloaded!');
+            
+            // Small delay to ensure DOM is fully populated
+            await new Promise(r => setTimeout(r, 400));
+            
+            const element = document.getElementById('invoiceTemplate');
+            
+            const opt = {
+                margin:       0.3,
+                filename:     `Invoice_ORD_${order.sale_id}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false, windowWidth: 800 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().from(element).set(opt).save().then(() => {
+                showToast('Invoice downloaded successfully!');
+            }).catch(err => {
+                console.error(err);
+                showToast('Failed to generate PDF', 'error');
+            });
         }
     </script>
 </body>
