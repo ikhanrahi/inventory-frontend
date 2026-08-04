@@ -21,7 +21,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-    <div class="container mx-auto p-4 sm:p-6 max-w-6xl">
+    <div class="container mx-auto p-4 sm:p-6 max-w-7xl">
         <header class="flex justify-between items-center bg-slate-800/80 border border-slate-700/50 p-4 sm:p-6 rounded-2xl shadow-xl backdrop-blur-md mb-6">
             <div class="flex items-center gap-3">
                 <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
@@ -163,16 +163,16 @@
                 <div id="adminPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
                     <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-indigo-400"></i> Add New Stock Item</h2>
                     <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                        <input type="text" id="pName" placeholder="Product Name *" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs" required>
-                        <input type="text" id="pSku" placeholder="SKU / Barcode (Optional)" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs">
-                        <input type="text" id="pCategory" placeholder="Category" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs">
-                        <input type="text" id="pBrand" placeholder="Brand" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs">
-                        <input type="text" id="pSupplier" placeholder="Supplier" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs">
-                        <input type="text" id="pLocation" placeholder="Location" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs">
+                        <input type="text" id="pName" placeholder="Product Name *" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white" required>
+                        <input type="text" id="pSku" placeholder="SKU / Barcode (Optional)" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white">
+                        <input type="text" id="pCategory" placeholder="Category" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white">
+                        <input type="text" id="pBrand" placeholder="Brand" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white">
+                        <input type="text" id="pSupplier" placeholder="Supplier" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white">
+                        <input type="text" id="pLocation" placeholder="Location" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white">
                         <div><label class="text-[10px] text-slate-400 block mb-0.5">Expiry Date</label><input type="date" id="pExpiry" class="w-full bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-xl text-xs text-slate-200"></div>
-                        <input type="number" id="pCostPrice" placeholder="Cost Price *" step="0.01" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs mt-auto" required>
-                        <input type="number" id="pPrice" placeholder="Selling Price *" step="0.01" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs mt-auto" required>
-                        <input type="number" id="pQuantity" placeholder="Stock Qty *" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs mt-auto" required>
+                        <input type="number" id="pCostPrice" placeholder="Cost Price *" step="0.01" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white mt-auto" required>
+                        <input type="number" id="pPrice" placeholder="Selling Price *" step="0.01" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white mt-auto" required>
+                        <input type="number" id="pQuantity" placeholder="Stock Qty *" class="bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-xs text-white mt-auto" required>
                         <button type="submit" class="md:col-span-5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs mt-2">+ Add Product</button>
                     </form>
                 </div>
@@ -196,18 +196,22 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
+                        <table class="w-full text-left border-collapse whitespace-nowrap">
                             <thead>
-                                <tr id="productTableHeaderRow" class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
-                                    <th class="p-3">SKU</th>
-                                    <th class="p-3">Product</th>
-                                    <th class="p-3">Category</th>
-                                    <th class="p-3">Location</th>
-                                    <th class="p-3">Price</th>
-                                    <th class="p-3">Stock</th>
-                                </tr>
+                                <tr id="productTableHeaderRow" class="border-b border-slate-700 text-[11px] uppercase text-slate-400 bg-slate-900/40">
+                                    <th class="p-2.5">SKU</th>
+                                    <th class="p-2.5">Product Name</th>
+                                    <th class="p-2.5">Category</th>
+                                    <th class="p-2.5">Brand</th>
+                                    <th class="p-2.5">Supplier</th>
+                                    <th class="p-2.5">Location</th>
+                                    <th class="p-2.5">Cost</th>
+                                    <th class="p-2.5">Sell Price</th>
+                                    <th class="p-2.5">Stock</th>
+                                    <th class="p-2.5">Expiry Date</th>
+                                    </tr>
                             </thead>
-                            <tbody id="productTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody>
+                            <tbody id="productTableBody" class="divide-y divide-slate-700/50 text-xs"></tbody>
                         </table>
                     </div>
 
@@ -339,12 +343,10 @@
         let allProducts = [], activeReportType = 'sales', fullReportData = [], reportCurrentPage = 1, reportRowsPerPage = 5;
         let posCart = [], actualAdminPasscode = '', isPasscodeRevealed = false;
         
-        // Inventory Stock Pagination Variables
         let currentFilteredProducts = [];
         let prodCurrentPage = 1;
         const prodsPerPage = 10;
 
-        // Customer Orders Pagination Variables
         let fullCustomerOrders = [];
         let custOrderCurrentPage = 1;
         const custOrdersPerPage = 10;
@@ -659,10 +661,10 @@
             } else if (activeReportType === 'dues') {
                 thead.innerHTML = `<tr><th class="p-2">Order</th><th class="p-2">Customer</th><th class="p-2">Product Purchased</th><th class="p-2">Qty</th><th class="p-2">Unit Price</th><th class="p-2">Total (${sym})</th><th class="p-2">Paid</th><th class="p-2">Due (${sym})</th><th class="p-2">Date</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2 text-indigo-400 font-mono font-bold">#ORD-${r.sale_id}</td><td class="p-2 font-semibold text-white">${r.customer_name}</td><td class="p-2 text-slate-200">${r.product_name}</td><td class="p-2">${r.quantity} Pcs</td><td class="p-2">${sym}${r.unit_price}</td><td class="p-2 font-bold text-white">${sym}${r.total_amount}</td><td class="p-2 text-emerald-400">${sym}${r.paid_amount}</td><td class="p-2 text-amber-400 font-black">${sym}${r.due_amount}</td><td class="p-2 text-slate-400">${formatDateTime(r.created_at)}</td></tr>`);
-            } else if (activeReportType === 'payments') { // 👈 💳 PAYMENT METHOD BREAKDOWN REPORT RENDERING
+            } else if (activeReportType === 'payments') {
                 thead.innerHTML = `<tr><th class="p-2">Payment Method</th><th class="p-2">Total Orders</th><th class="p-2">Gross Revenue (${sym})</th><th class="p-2">Collected Amount</th><th class="p-2">Due Amount</th></tr>`;
                 pageData.forEach(r => tbody.innerHTML += `<tr><td class="p-2 font-bold text-indigo-400">${r.payment_method}</td><td class="p-2">${r.total_transactions} Orders</td><td class="p-2 font-bold text-white">${sym}${parseFloat(r.total_revenue || 0).toFixed(2)}</td><td class="p-2 text-emerald-400 font-bold">${sym}${parseFloat(r.total_collected || 0).toFixed(2)}</td><td class="p-2 text-amber-400 font-bold">${sym}${parseFloat(r.total_due || 0).toFixed(2)}</td></tr>`);
-            } else if (activeReportType === 'bestsellers') { // 👈 🏆 TOP 10 BEST SELLERS REPORT RENDERING
+            } else if (activeReportType === 'bestsellers') {
                 thead.innerHTML = `<tr><th class="p-2">Rank</th><th class="p-2">Product Name</th><th class="p-2">SKU</th><th class="p-2">Category</th><th class="p-2">Total Sold</th><th class="p-2">Total Revenue (${sym})</th></tr>`;
                 pageData.forEach((r, idx) => tbody.innerHTML += `<tr><td class="p-2 font-bold text-amber-400">#${idx + 1}</td><td class="p-2 font-semibold text-white">${r.product_name}</td><td class="p-2 text-indigo-300 font-mono">${r.sku}</td><td class="p-2 text-slate-300">${r.category}</td><td class="p-2 font-bold text-emerald-400">${r.total_sold} Pcs</td><td class="p-2 font-black text-white">${sym}${parseFloat(r.total_revenue || 0).toFixed(2)}</td></tr>`);
             } else if (activeReportType === 'stocks' || activeReportType === 'lowstock') {
@@ -696,6 +698,7 @@
             renderPOSProductGrid();
         }
 
+        // RENDER ALL 10 FIELDS IN TABLE
         function renderProductTable(user) {
             if (!user) user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
@@ -705,27 +708,35 @@
 
             if (user.role === 'ADMIN') {
                 headerRow.innerHTML = `
-                    <th class="p-3">SKU</th>
-                    <th class="p-3">Product</th>
-                    <th class="p-3">Category</th>
-                    <th class="p-3">Location</th>
-                    <th class="p-3">Price</th>
-                    <th class="p-3">Stock</th>
-                    <th class="p-3 text-right">Action</th>
+                    <th class="p-2.5">SKU</th>
+                    <th class="p-2.5">Product Name</th>
+                    <th class="p-2.5">Category</th>
+                    <th class="p-2.5">Brand</th>
+                    <th class="p-2.5">Supplier</th>
+                    <th class="p-2.5">Location</th>
+                    <th class="p-2.5">Cost</th>
+                    <th class="p-2.5">Sell Price</th>
+                    <th class="p-2.5">Stock</th>
+                    <th class="p-2.5">Expiry Date</th>
+                    <th class="p-2.5 text-right">Action</th>
                 `;
             } else {
                 headerRow.innerHTML = `
-                    <th class="p-3">SKU</th>
-                    <th class="p-3">Product</th>
-                    <th class="p-3">Category</th>
-                    <th class="p-3">Location</th>
-                    <th class="p-3">Price</th>
-                    <th class="p-3">Stock</th>
+                    <th class="p-2.5">SKU</th>
+                    <th class="p-2.5">Product Name</th>
+                    <th class="p-2.5">Category</th>
+                    <th class="p-2.5">Brand</th>
+                    <th class="p-2.5">Supplier</th>
+                    <th class="p-2.5">Location</th>
+                    <th class="p-2.5">Cost</th>
+                    <th class="p-2.5">Sell Price</th>
+                    <th class="p-2.5">Stock</th>
+                    <th class="p-2.5">Expiry Date</th>
                 `;
             }
 
             if (!currentFilteredProducts || currentFilteredProducts.length === 0) {
-                const colSpan = user.role === 'ADMIN' ? 7 : 6;
+                const colSpan = user.role === 'ADMIN' ? 11 : 10;
                 tb.innerHTML = `<tr><td colspan="${colSpan}" class="p-4 text-center text-slate-500">No inventory products found.</td></tr>`;
                 document.getElementById('prodPageInfo').innerText = `Page 0 of 0`;
                 document.getElementById('btnProdPrev').disabled = true;
@@ -738,21 +749,37 @@
             const pageData = currentFilteredProducts.slice(startIdx, startIdx + prodsPerPage);
 
             pageData.forEach(p => {
+                const expDateStr = p.expiry_date ? p.expiry_date.slice(0, 10) : 'N/A';
+                const safeName = (p.name || '').replace(/'/g, "\\'");
+                const safeSku = (p.sku || '').replace(/'/g, "\\'");
+                const safeCat = (p.category || '').replace(/'/g, "\\'");
+                const safeBrand = (p.brand || '').replace(/'/g, "\\'");
+                const safeSup = (p.supplier || '').replace(/'/g, "\\'");
+                const safeLoc = (p.location || '').replace(/'/g, "\\'");
+
                 let rowHtml = `
                     <tr class="hover:bg-slate-700/35">
-                        <td class="p-3 font-mono text-xs text-indigo-400">${p.sku}</td>
-                        <td class="p-3 font-semibold">${p.name}</td>
-                        <td class="p-3 text-xs text-slate-300">${p.category}</td>
-                        <td class="p-3 text-xs font-mono text-amber-400">${p.location}</td>
-                        <td class="p-3 text-emerald-400 font-bold">${sym}${p.price}</td>
-                        <td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.quantity<=5?'bg-rose-500/10 text-rose-400':'bg-slate-700'}">${p.quantity} Pcs</span></td>
+                        <td class="p-2.5 font-mono text-indigo-400 font-semibold">${p.sku}</td>
+                        <td class="p-2.5 font-bold text-white">${p.name}</td>
+                        <td class="p-2.5 text-slate-300">${p.category || 'General'}</td>
+                        <td class="p-2.5 text-slate-300">${p.brand || 'Generic'}</td>
+                        <td class="p-2.5 text-slate-300">${p.supplier || 'N/A'}</td>
+                        <td class="p-2.5 text-amber-400 font-mono">${p.location || 'Main Stock'}</td>
+                        <td class="p-2.5 text-slate-300 font-mono">${sym}${parseFloat(p.cost_price || 0).toFixed(2)}</td>
+                        <td class="p-2.5 text-emerald-400 font-mono font-bold">${sym}${parseFloat(p.price || 0).toFixed(2)}</td>
+                        <td class="p-2.5"><span class="px-2 py-0.5 rounded-full text-xs font-bold ${p.quantity<=5?'bg-rose-500/10 text-rose-400 border border-rose-500/20':'bg-slate-700 text-slate-200'}">${p.quantity} Pcs</span></td>
+                        <td class="p-2.5 text-slate-400 font-mono">${expDateStr}</td>
                 `;
 
                 if (user.role === 'ADMIN') {
                     rowHtml += `
-                        <td class="p-3 text-right">
-                            <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price}, '${p.category}', '${p.brand}', '${p.supplier}', '${p.location}', '${p.expiry_date?p.expiry_date.slice(0,10):''}', ${p.quantity})" class="text-indigo-400 p-1.5"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button onclick="deleteProduct(${p.id})" class="text-rose-400 p-1.5 ml-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <td class="p-2.5 text-right">
+                            <button onclick="openFullEditModal(${p.id}, '${safeName}', '${safeSku}', ${p.price}, ${p.cost_price}, '${safeCat}', '${safeBrand}', '${safeSup}', '${safeLoc}', '${expDateStr}', ${p.quantity})" class="bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 text-indigo-300 hover:text-white px-2.5 py-1 rounded-lg text-xs font-semibold transition-all">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
+                            </button>
+                            <button onclick="deleteProduct(${p.id})" class="bg-rose-600/20 hover:bg-rose-600 border border-rose-500/30 text-rose-300 hover:text-white px-2 py-1 rounded-lg text-xs font-semibold ml-1 transition-all">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
                         </td>
                     `;
                 }
@@ -774,25 +801,105 @@
         function filterProducts() {
             const q = document.getElementById('searchInput').value.toLowerCase();
             const user = JSON.parse(localStorage.getItem('user'));
-            currentFilteredProducts = allProducts.filter(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || (p.brand && p.brand.toLowerCase().includes(q)));
+            currentFilteredProducts = allProducts.filter(p => 
+                (p.name && p.name.toLowerCase().includes(q)) || 
+                (p.sku && p.sku.toLowerCase().includes(q)) || 
+                (p.category && p.category.toLowerCase().includes(q)) || 
+                (p.brand && p.brand.toLowerCase().includes(q)) || 
+                (p.supplier && p.supplier.toLowerCase().includes(q)) || 
+                (p.location && p.location.toLowerCase().includes(q))
+            );
             prodCurrentPage = 1;
             renderProductTable(user);
         }
 
-        async function openEditModal(id, name, sku, price, cost, cat, brand, sup, loc, exp, qty) {
+        // FULL EDIT MODAL FOR ALL 10 FIELDS
+        async function openFullEditModal(id, name, sku, price, cost, cat, brand, sup, loc, exp, qty) {
             const { value: v } = await Swal.fire({
-                title: 'Edit Product',
-                html: `<input id="e-name" class="swal2-input bg-slate-900 text-xs" value="${name}"><input id="e-sku" class="swal2-input bg-slate-900 text-xs" value="${sku}"><input id="e-price" type="number" step="0.01" class="swal2-input bg-slate-900 text-xs" value="${price}"><input id="e-qty" type="number" class="swal2-input bg-slate-900 text-xs" value="${qty}">`,
-                showCancelButton: true, confirmButtonText: 'Save',
-                preConfirm: () => ({ name: document.getElementById('e-name').value, sku: document.getElementById('e-sku').value, price: document.getElementById('e-price').value, cost_price: cost, category: cat, brand: brand, supplier: sup, location: loc, expiry_date: exp, quantity: document.getElementById('e-qty').value })
+                title: 'Edit Stock Item (All 10 Fields)',
+                width: '650px',
+                html: `
+                    <div class="grid grid-cols-2 gap-3 text-left text-xs p-1">
+                        <div>
+                            <label class="text-slate-400 block mb-1">Product Name *</label>
+                            <input id="fe-name" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white font-semibold" value="${name}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">SKU / Barcode</label>
+                            <input id="fe-sku" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white font-mono" value="${sku}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Category</label>
+                            <input id="fe-cat" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white" value="${cat}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Brand</label>
+                            <input id="fe-brand" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white" value="${brand}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Supplier</label>
+                            <input id="fe-sup" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white" value="${sup}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Location</label>
+                            <input id="fe-loc" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white font-mono" value="${loc}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Cost Price *</label>
+                            <input id="fe-cost" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white font-mono" value="${cost}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Selling Price *</label>
+                            <input id="fe-price" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-emerald-400 font-mono font-bold" value="${price}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Stock Quantity *</label>
+                            <input id="fe-qty" type="number" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white font-bold" value="${qty}">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 block mb-1">Expiry Date</label>
+                            <input id="fe-exp" type="date" class="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded-xl text-white" value="${exp !== 'N/A' ? exp : ''}">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Save All Changes',
+                confirmButtonColor: '#4f46e5',
+                preConfirm: () => ({
+                    name: document.getElementById('fe-name').value,
+                    sku: document.getElementById('fe-sku').value,
+                    category: document.getElementById('fe-cat').value,
+                    brand: document.getElementById('fe-brand').value,
+                    supplier: document.getElementById('fe-sup').value,
+                    location: document.getElementById('fe-loc').value,
+                    cost_price: parseFloat(document.getElementById('fe-cost').value) || 0,
+                    price: parseFloat(document.getElementById('fe-price').value) || 0,
+                    quantity: parseInt(document.getElementById('fe-qty').value) || 0,
+                    expiry_date: document.getElementById('fe-exp').value || null
+                })
             });
-            if (v) { await fetch(`${API_BASE}/products/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }); showToast('Updated'); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics(); }
+
+            if (v) {
+                showToast('Saving product updates...');
+                const res = await fetch(`${API_BASE}/products/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(v)
+                });
+                if (res.ok) {
+                    showToast('Product updated successfully!');
+                    loadProducts(JSON.parse(localStorage.getItem('user')));
+                    loadAnalytics();
+                } else {
+                    showToast('Failed to update product', 'error');
+                }
+            }
         }
 
         async function deleteProduct(id) {
-            if ((await Swal.fire({ title: 'Delete?', icon: 'warning', showCancelButton: true })).isConfirmed) {
+            if ((await Swal.fire({ title: 'Delete Product?', text: 'Are you sure you want to remove this item?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e11d48' })).isConfirmed) {
                 await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
-                showToast('Deleted'); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics();
+                showToast('Product deleted'); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics();
             }
         }
 
@@ -906,7 +1013,7 @@
             }
         }
 
-        // Load and render Customer Orders with 10 records per page limit
+        // Load and render Customer Orders
         async function loadCustomerOrders(id) {
             const user = JSON.parse(localStorage.getItem('user'));
             const res = await fetch(`${API_BASE}/sales/customer/${id}`);
