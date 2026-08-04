@@ -680,8 +680,7 @@
             const pageData = currentFilteredProducts.slice(startIdx, startIdx + prodsPerPage);
 
             pageData.forEach(p => {
-                const out = p.quantity <= 0;
-                tb.innerHTML += `<tr class="hover:bg-slate-700/35"><td class="p-3 font-mono text-xs text-indigo-400">${p.sku}</td><td class="p-3 font-semibold">${p.name}</td><td class="p-3 text-xs text-slate-300">${p.category}</td><td class="p-3 text-xs font-mono text-amber-400">${p.location}</td><td class="p-3 text-emerald-400 font-bold">${sym}${p.price}</td><td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.quantity<=5?'bg-rose-500/10 text-rose-400':'bg-slate-700'}">${p.quantity} Pcs</span></td><td class="p-3 text-right">${user.role==='CUSTOMER'?`<div class="flex items-center justify-end gap-2"><select id="payMethod-${p.id}" class="bg-slate-900 border border-slate-700 text-xs text-white p-1 rounded"><option value="Cash">Cash</option><option value="Card">Card</option><option value="Bkash">Bkash</option></select><input type="number" id="qty-${p.id}" value="1" min="1" max="${p.quantity}" class="w-12 bg-slate-900 border border-slate-700 p-1 text-center text-xs" ${out?'disabled':''}><button onclick="buyProduct(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded text-xs ${out?'opacity-50':''}" ${out?'disabled':''}>Buy</button></div>`:`<button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price}, '${p.category}', '${p.brand}', '${p.supplier}', '${p.location}', '${p.expiry_date?p.expiry_date.slice(0,10):''}', ${p.quantity})" class="text-indigo-400 p-1.5"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteProduct(${p.id})" class="text-rose-400 p-1.5 ml-1"><i class="fa-solid fa-trash-can"></i></button>`}</td></tr>`;
+                tb.innerHTML += `<tr class="hover:bg-slate-700/35"><td class="p-3 font-mono text-xs text-indigo-400">${p.sku}</td><td class="p-3 font-semibold">${p.name}</td><td class="p-3 text-xs text-slate-300">${p.category}</td><td class="p-3 text-xs font-mono text-amber-400">${p.location}</td><td class="p-3 text-emerald-400 font-bold">${sym}${p.price}</td><td class="p-3"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.quantity<=5?'bg-rose-500/10 text-rose-400':'bg-slate-700'}">${p.quantity} Pcs</span></td><td class="p-3 text-right">${user.role==='CUSTOMER'?`<span class="text-xs text-slate-500 font-medium">Read Only</span>`:`<button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price}, '${p.category}', '${p.brand}', '${p.supplier}', '${p.location}', '${p.expiry_date?p.expiry_date.slice(0,10):''}', ${p.quantity})" class="text-indigo-400 p-1.5"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="deleteProduct(${p.id})" class="text-rose-400 p-1.5 ml-1"><i class="fa-solid fa-trash-can"></i></button>`}</td></tr>`;
             });
 
             document.getElementById('prodPageInfo').innerText = `Page ${prodCurrentPage} of ${totalPages} (${currentFilteredProducts.length} Products)`;
@@ -710,14 +709,6 @@
                 preConfirm: () => ({ name: document.getElementById('e-name').value, sku: document.getElementById('e-sku').value, price: document.getElementById('e-price').value, cost_price: cost, category: cat, brand: brand, supplier: sup, location: loc, expiry_date: exp, quantity: document.getElementById('e-qty').value })
             });
             if (v) { await fetch(`${API_BASE}/products/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }); showToast('Updated'); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics(); }
-        }
-
-        async function buyProduct(id) {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const qty = parseInt(document.getElementById(`qty-${id}`).value);
-            const pay = document.getElementById(`payMethod-${id}`).value;
-            const res = await fetch(`${API_BASE}/sales`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: user.id, product_id: id, quantity: qty, payment_method: pay }) });
-            if (res.ok) { showToast('Purchase successful'); loadProducts(user); loadCustomerOrders(user.id); } else { showToast('Failed', 'error'); }
         }
 
         async function deleteProduct(id) {
