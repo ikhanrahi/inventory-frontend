@@ -22,7 +22,7 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
     <div class="container mx-auto p-4 sm:p-6 max-w-7xl">
-        <header class="flex justify-between items-center bg-slate-800/80 border border-slate-700/50 p-4 sm:p-6 rounded-2xl shadow-xl backdrop-blur-md mb-6">
+        <header class="flex justify-between items-center bg-slate-800/80 border border-slate-700/50 p-4 sm:p-6 rounded-2xl shadow-xl backdrop-blur-md mb-6 relative">
             <div class="flex items-center gap-3">
                 <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
                     <i class="fa-solid fa-boxes-stacked text-xl"></i>
@@ -32,7 +32,25 @@
                     <p class="text-xs text-slate-400 hidden sm:block">Inventory & Business Management</p>
                 </div>
             </div>
+            
             <div id="userInfo" class="hidden flex items-center gap-3">
+                <div id="adminNotificationContainer" class="relative hidden">
+                    <button onclick="toggleNotificationDropdown(event)" class="relative bg-slate-900/80 hover:bg-slate-700 border border-slate-700 p-2.5 rounded-xl text-slate-300 hover:text-white transition-all">
+                        <i class="fa-solid fa-bell text-lg"></i>
+                        <span id="notificationBadge" class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-800 hidden">0</span>
+                    </button>
+
+                    <div id="notificationDropdownPanel" class="hidden absolute right-0 mt-3 w-80 sm:w-96 bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                        <div class="p-3.5 bg-slate-900/90 border-b border-slate-700 flex justify-between items-center">
+                            <h3 class="font-bold text-xs text-white flex items-center gap-2"><i class="fa-solid fa-bell text-amber-400"></i> Admin Alerts & Requests</h3>
+                            <span id="notifPanelTotal" class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold">0 New</span>
+                        </div>
+                        <div id="notificationItemsList" class="max-h-80 overflow-y-auto divide-y divide-slate-700/50 text-xs">
+                            <p class="p-4 text-center text-slate-500">No new notifications</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="text-right hidden sm:block">
                     <div class="flex items-center justify-end gap-2 mb-0.5">
                         <p id="userName" class="font-bold text-sm text-slate-100"></p>
@@ -209,7 +227,7 @@
                                     <th class="p-2.5">Sell Price</th>
                                     <th class="p-2.5">Stock</th>
                                     <th class="p-2.5">Expiry Date</th>
-                                    </tr>
+                                </tr>
                             </thead>
                             <tbody id="productTableBody" class="divide-y divide-slate-700/50 text-xs"></tbody>
                         </table>
@@ -360,6 +378,81 @@
 
         window.onload = () => { const u = JSON.parse(localStorage.getItem('user')); if (u) showDashboard(u); };
 
+        // Close Notification Dropdown on outside click
+        window.addEventListener('click', function(e) {
+            const container = document.getElementById('adminNotificationContainer');
+            const panel = document.getElementById('notificationDropdownPanel');
+            if (container && !container.contains(e.target) && panel) {
+                panel.classList.add('hidden');
+            }
+        });
+
+        function toggleNotificationDropdown(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('notificationDropdownPanel');
+            panel.classList.toggle('hidden');
+        }
+
+        // 🔔 FETCH ADMIN NOTIFICATIONS
+        async function fetchAdminNotifications() {
+            try {
+                const res = await fetch(`${API_BASE}/admin/notifications`);
+                if (!res.ok) return;
+                const data = await res.json();
+                
+                const badge = document.getElementById('notificationBadge');
+                const panelTotal = document.getElementById('notifPanelTotal');
+                const list = document.getElementById('notificationItemsList');
+
+                panelTotal.innerText = `${data.totalCount} New`;
+
+                if (data.totalCount > 0) {
+                    badge.innerText = data.totalCount;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+
+                list.innerHTML = '';
+
+                if (data.totalCount === 0) {
+                    list.innerHTML = `<p class="p-4 text-center text-slate-500">No new alerts or requests 🎉</p>`;
+                    return;
+                }
+
+                // Render Pending Users
+                data.pendingUsers.forEach(u => {
+                    list.innerHTML += `
+                        <div onclick="switchAdminTab('users');" class="p-3 hover:bg-slate-700/50 cursor-pointer transition-all flex items-start gap-2.5">
+                            <div class="bg-indigo-500/20 text-indigo-400 p-1.5 rounded-lg text-xs mt-0.5"><i class="fa-solid fa-user-clock"></i></div>
+                            <div class="flex-1">
+                                <p class="font-bold text-white">${u.name} <span class="text-[10px] text-amber-400 font-normal">(${u.role})</span></p>
+                                <p class="text-[10px] text-slate-400">${u.email}</p>
+                                <span class="text-[9px] text-indigo-300 font-semibold">Pending Approval Request</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Render Low Stock Items
+                data.lowStockItems.forEach(p => {
+                    list.innerHTML += `
+                        <div onclick="switchAdminTab('inventory');" class="p-3 hover:bg-slate-700/50 cursor-pointer transition-all flex items-start gap-2.5">
+                            <div class="bg-rose-500/20 text-rose-400 p-1.5 rounded-lg text-xs mt-0.5"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="flex-1">
+                                <p class="font-bold text-white">${p.name}</p>
+                                <p class="text-[10px] text-slate-400 font-mono">SKU: ${p.sku}</p>
+                                <span class="text-[10px] text-rose-400 font-black">Low Stock: ${p.quantity} Pcs Left</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+            } catch (err) {
+                console.error("Failed to load notifications", err);
+            }
+        }
+
         function toggleAdminCodeInput() {
             document.getElementById('adminPasscodeField').classList.toggle('hidden', document.getElementById('regRole').value !== 'ADMIN');
         }
@@ -421,11 +514,15 @@
             if (importBtn) importBtn.style.display = user.role === 'ADMIN' ? 'inline-flex' : 'none';
 
             if (user.role === 'ADMIN') {
+                document.getElementById('adminNotificationContainer').classList.remove('hidden');
                 document.getElementById('adminNavMenu').classList.remove('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
                 document.getElementById('analyticsSection').classList.remove('hidden');
-                loadAnalytics(); switchAdminTab('pos');
+                loadAnalytics(); 
+                fetchAdminNotifications();
+                switchAdminTab('pos');
             } else {
+                document.getElementById('adminNotificationContainer').classList.add('hidden');
                 document.getElementById('section-inventory').classList.remove('hidden');
                 document.getElementById('customerOrdersPanel').classList.remove('hidden');
                 loadCustomerOrders(user.id);
@@ -509,6 +606,7 @@
                     renderPOSCart();
                     loadProducts(user);
                     loadAnalytics();
+                    fetchAdminNotifications();
                 } else { showToast(d.message || 'Failed', 'error'); }
             } catch { showToast('Error', 'error'); }
         }
@@ -591,7 +689,7 @@
                         body: JSON.stringify({ customer_id: customerId, amount_paid: amountPaid })
                     });
                     const d = await res.json();
-                    if (res.ok) { showToast(d.message); loadDuesLedger(); loadAnalytics(); } else { showToast(d.message || 'Failed', 'error'); }
+                    if (res.ok) { showToast(d.message); loadDuesLedger(); loadAnalytics(); fetchAdminNotifications(); } else { showToast(d.message || 'Failed', 'error'); }
                 } catch { showToast('Server Error', 'error'); }
             }
         }
@@ -612,7 +710,7 @@
                 showCancelButton: true, confirmButtonText: 'Save',
                 preConfirm: () => ({ role: document.getElementById('s-role').value, is_approved: document.getElementById('s-app').value === 'true', currency: document.getElementById('s-cur').value })
             });
-            if (v) { await fetch(`${API_BASE}/admin/manage-user/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }); showToast('Updated'); loadUsersManagement(); loadAnalytics(); }
+            if (v) { await fetch(`${API_BASE}/admin/manage-user/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) }); showToast('Updated'); loadUsersManagement(); loadAnalytics(); fetchAdminNotifications(); }
         }
 
         async function openChangePasswordModal(id, name) {
@@ -623,7 +721,7 @@
         async function deleteUser(id) {
             if ((await Swal.fire({ title: 'Delete?', icon: 'warning', showCancelButton: true })).isConfirmed) {
                 await fetch(`${API_BASE}/admin/delete-user/${id}`, { method: 'DELETE' });
-                showToast('Deleted'); loadUsersManagement(); loadAnalytics();
+                showToast('Deleted'); loadUsersManagement(); loadAnalytics(); fetchAdminNotifications();
             }
         }
 
@@ -698,7 +796,6 @@
             renderPOSProductGrid();
         }
 
-        // RENDER ALL 10 FIELDS IN TABLE
         function renderProductTable(user) {
             if (!user) user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
@@ -813,7 +910,6 @@
             renderProductTable(user);
         }
 
-        // FULL EDIT MODAL FOR ALL 10 FIELDS
         async function openFullEditModal(id, name, sku, price, cost, cat, brand, sup, loc, exp, qty) {
             const { value: v } = await Swal.fire({
                 title: 'Edit Stock Item (All 10 Fields)',
@@ -890,6 +986,7 @@
                     showToast('Product updated successfully!');
                     loadProducts(JSON.parse(localStorage.getItem('user')));
                     loadAnalytics();
+                    fetchAdminNotifications();
                 } else {
                     showToast('Failed to update product', 'error');
                 }
@@ -899,7 +996,7 @@
         async function deleteProduct(id) {
             if ((await Swal.fire({ title: 'Delete Product?', text: 'Are you sure you want to remove this item?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#e11d48' })).isConfirmed) {
                 await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
-                showToast('Product deleted'); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics();
+                showToast('Product deleted'); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics(); fetchAdminNotifications();
             }
         }
 
@@ -1001,6 +1098,7 @@
                             showToast(data.message);
                             loadProducts(JSON.parse(localStorage.getItem('user')));
                             loadAnalytics();
+                            fetchAdminNotifications();
                         } else {
                             showToast(data.message || 'Import failed', 'error');
                         }
@@ -1077,7 +1175,7 @@
             e.preventDefault();
             const body = { name: document.getElementById('pName').value, sku: document.getElementById('pSku').value, category: document.getElementById('pCategory').value, brand: document.getElementById('pBrand').value, supplier: document.getElementById('pSupplier').value, location: document.getElementById('pLocation').value, expiry_date: document.getElementById('pExpiry').value, cost_price: document.getElementById('pCostPrice').value, price: document.getElementById('pPrice').value, quantity: document.getElementById('pQuantity').value };
             const res = await fetch(`${API_BASE}/products`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            if (res.ok) { showToast('Added successfully'); e.target.reset(); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics(); }
+            if (res.ok) { showToast('Added successfully'); e.target.reset(); loadProducts(JSON.parse(localStorage.getItem('user'))); loadAnalytics(); fetchAdminNotifications(); }
         }
 
         async function downloadPDF(order) {

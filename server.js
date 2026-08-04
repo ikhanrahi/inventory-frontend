@@ -33,7 +33,7 @@ async function sendLowStockEmail(mailOptions) {
     }
 
     const transporter = nodemailer.createTransport({
-        host: ipv4Host,
+        host: ipv4Host,checkAndSendLowStockAlert
         port: 465,
         secure: true, // SSL
         auth: {
@@ -51,6 +51,7 @@ async function sendLowStockEmail(mailOptions) {
     return await transporter.sendMail(mailOptions);
 }
 
+// Helper function to send low stock alert emails
 // Helper function to send low stock alert emails
 // Helper function to send low stock alert emails
 async function checkAndSendLowStockAlert(productId) {
