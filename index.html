@@ -595,7 +595,7 @@
             
             showToast('Generating PDF...');
 
-            // Using pure jsPDF to draw a clean, professional invoice directly without canvas bugs
+            // Create a new jsPDF instance
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({
                 orientation: 'portrait',
@@ -603,15 +603,15 @@
                 format: 'letter'
             });
 
-            // Set font styles and colors
+            // Header - Title
             doc.setFont("helvetica", "bold");
-            doc.setFontSize(22);
-            doc.setTextColor(79, 70, 229); // Indigo color
+            doc.setFontSize(24);
+            doc.setTextColor(79, 70, 229); // Indigo
             doc.text("INVOICE", 0.5, 0.8);
 
             doc.setFont("helvetica", "normal");
             doc.setFontSize(10);
-            doc.setTextColor(100, 116, 139); // Slate color
+            doc.setTextColor(100, 116, 139); // Slate
             doc.text("StockFlow ERP System", 0.5, 1.05);
 
             // Invoice Metadata (Right side)
@@ -662,7 +662,7 @@
             doc.text(`${sym}${order.unit_price}`, 5.6, 2.9, { align: "right" });
 
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(5, 150, 105); // Emerald green
+            doc.setTextColor(5, 150, 105); // Emerald
             doc.text(`${sym}${order.total_amount}`, 7.3, 2.9, { align: "right" });
 
             // Table Bottom Divider
@@ -674,9 +674,25 @@
             doc.setTextColor(148, 163, 184);
             doc.text("Thank you for your business! - Powered by StockFlow ERP", 4.0, 10.2, { align: "center" });
 
-            // Save PDF
-            doc.save(`Invoice_ORD_${order.sale_id}.pdf`);
-            showToast('Invoice PDF downloaded successfully!');
+            try {
+                // Force download using blob URL to ensure mobile & PC browsers trigger the download
+                const pdfBlob = doc.output('blob');
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = `Invoice_ORD_${order.sale_id}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showToast('Invoice downloaded successfully!');
+            } catch (err) {
+                console.error(err);
+                // Fallback to standard save if blob fails
+                doc.save(`Invoice_ORD_${order.sale_id}.pdf`);
+                showToast('Invoice saved!');
+            }
         }
     </script>
 </body>
