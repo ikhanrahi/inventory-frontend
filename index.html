@@ -11,7 +11,7 @@
     <style>
         .swal2-popup { background: #1e293b !important; color: #f8fafc !important; border: 1px solid rgba(51, 65, 85, 0.6) !important; border-radius: 1rem !important; }
         .swal2-title { color: #f8fafc !important; }
-        #invoiceContainer { position: fixed; top: 0; left: 0; width: 700px; pointer-events: none; opacity: 0; z-index: -9999; }
+        #invoiceContainer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; z-index: -9999; overflow: hidden; }
         @media print {
             body * { visibility: hidden; }
             #printableReport, #printableReport *, #posReceiptModal, #posReceiptModal * { visibility: visible; }
@@ -218,7 +218,7 @@
                     <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2"><i class="fa-solid fa-plus-circle text-indigo-400"></i> Add New Stock Item</h2>
                     <form onsubmit="handleAddProduct(event)" class="grid grid-cols-1 md:grid-cols-5 gap-3">
                         <input type="text" id="pName" placeholder="Product Name *" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs" required>
-                        <input type="text" id="pSku" placeholder="SKU / Barcode" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
+                        <input type="text" id="pSku" placeholder="SKU / Barcode (Optional)" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
                         <input type="text" id="pCategory" placeholder="Category (e.g. Electronics)" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
                         <input type="text" id="pBrand" placeholder="Brand Name (e.g. Apple)" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
                         <input type="text" id="pSupplier" placeholder="Supplier / Vendor" class="bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-xl text-xs">
@@ -318,10 +318,10 @@
                         <label class="text-xs font-semibold text-slate-400 mb-1 block">End Date</label>
                         <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-xl text-xs text-slate-200">
                     </div>
-                    <button onclick="loadReport('sales')" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold">Filter Data</button>
+                    <button onclick="loadReport('sales')" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold">Filter Report Data</button>
                 </div>
 
-                <div id="printableReport" class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4">
+                <div id="printableReport" class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4 hidden">
                     <div class="mb-4 text-center hidden print:block">
                         <h1 class="text-2xl font-bold">StockFlow ERP System Report</h1>
                         <p id="printReportTitle" class="text-sm font-semibold uppercase text-slate-600"></p>
@@ -332,7 +332,7 @@
                     </table>
                 </div>
 
-                <div id="reportPaginationControls" class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700/50">
+                <div id="reportPaginationControls" class="flex justify-between items-center text-xs text-slate-400 pt-3 border-t border-slate-700/50 hidden">
                     <span id="reportPageInfo">Page 1 of 1</span>
                     <div class="flex gap-2">
                         <button onclick="changeReportPage(-1)" id="btnReportPrev" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded-lg disabled:opacity-50">Previous</button>
@@ -389,6 +389,46 @@
 
         </div>
 
+    </div>
+
+    <div id="invoiceContainer">
+        <div id="invoiceTemplate" style="width: 700px; padding: 30px; font-family: sans-serif; background: #ffffff; color: #1e293b;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px;">
+                <div>
+                    <h1 style="font-size: 24px; font-weight: bold; color: #4f46e5; margin: 0;">INVOICE</h1>
+                    <p style="font-size: 12px; color: #64748b; margin: 2px 0 0 0;">StockFlow ERP System</p>
+                </div>
+                <div style="text-align: right;">
+                    <p id="invDate" style="font-size: 12px; color: #64748b; margin: 0;"></p>
+                    <p id="invNumber" style="font-size: 14px; font-weight: bold; font-family: monospace; margin: 2px 0 0 0;"></p>
+                </div>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 10px; text-transform: uppercase; color: #94a3b8; margin: 0 0 4px 0;">Billed To:</h3>
+                <p id="invCustomerName" style="font-size: 16px; font-weight: bold; color: #1e293b; margin: 0;"></p>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
+                        <th style="padding: 10px; text-align: left; font-size: 12px;">Product Name</th>
+                        <th style="padding: 10px; text-align: center; font-size: 12px;">Qty</th>
+                        <th style="padding: 10px; text-align: right; font-size: 12px;">Unit Price</th>
+                        <th style="padding: 10px; text-align: right; font-size: 12px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #e2e8f0;">
+                        <td id="invProductName" style="padding: 12px 10px; font-size: 12px;"></td>
+                        <td id="invQty" style="padding: 12px 10px; text-align: center; font-size: 12px;"></td>
+                        <td id="invUnitPrice" style="padding: 12px 10px; text-align: right; font-size: 12px;"></td>
+                        <td id="invTotal" style="padding: 12px 10px; text-align: right; font-size: 12px; font-weight: bold; color: #059669;"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; font-size: 11px; color: #94a3b8;">
+                <p style="margin: 0;">Thank you for your business!</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -470,8 +510,12 @@
                 if (res.ok) {
                     showToast(data.message, 'success');
                     toggleAuth('login');
-                } else showToast(data.message || 'Registration failed', 'error');
-            } catch (err) { showToast('Server Connection Error!', 'error'); }
+                } else {
+                    showToast(data.message || 'Registration failed', 'error');
+                }
+            } catch (err) { 
+                showToast('Server Connection Error!', 'error'); 
+            }
         }
 
         async function handleLogin(e) {
@@ -490,8 +534,12 @@
                     localStorage.setItem('user', JSON.stringify(data.user));
                     showToast('Login successful!', 'success');
                     showDashboard(data.user);
-                } else showToast(data.message || 'Login failed', 'error');
-            } catch (err) { showToast('Server Connection Error!', 'error'); }
+                } else {
+                    showToast(data.message || 'Login failed', 'error');
+                }
+            } catch (err) { 
+                showToast('Server Connection Error!', 'error'); 
+            }
         }
 
         function logout() { localStorage.clear(); location.reload(); }
@@ -505,7 +553,11 @@
 
             if (tabName === 'pos') renderPOSProductGrid();
             if (tabName === 'users') loadUsersManagement();
-            if (tabName === 'reports') loadReport(activeReportType);
+            if (tabName === 'reports') {
+                // Keep report hidden initially until filter clicked
+                document.getElementById('printableReport').classList.add('hidden');
+                document.getElementById('reportPaginationControls').classList.add('hidden');
+            }
             if (tabName === 'settings') fetchAdminPasscode();
         }
 
@@ -659,8 +711,12 @@
                     renderPOSCart();
                     loadProducts(user);
                     loadAnalytics();
-                } else showToast(data.message || 'Checkout failed', 'error');
-            } catch (err) { showToast('POS System Error!', 'error'); }
+                } else {
+                    showToast(data.message || 'Checkout failed', 'error');
+                }
+            } catch (err) { 
+                showToast('POS System Error!', 'error'); 
+            }
         }
 
         function printThermalPOSReceipt(saleId, items, total, payMethod, user) {
@@ -739,8 +795,12 @@
                     actualAdminPasscode = data.passcode;
                     renderPasscodeDisplay();
                     e.target.reset();
-                } else showToast(data.message || 'Update failed', 'error');
-            } catch (err) { showToast('Server Error!', 'error'); }
+                } else {
+                    showToast(data.message || 'Update failed', 'error');
+                }
+            } catch (err) { 
+                showToast('Server Error!', 'error'); 
+            }
         }
 
         async function loadAnalytics() {
@@ -913,17 +973,33 @@
 
             const dateBox = document.getElementById('dateFilterBox');
             if (type === 'sales') dateBox.classList.remove('hidden');
-            else dateBox.classList.add('hidden');
+            else {
+                dateBox.classList.add('hidden');
+                // Auto load for non-sales reports
+                fetchSalesReport();
+            }
+        }
 
+        async function fetchSalesReport() {
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
-            let url = `${API_BASE}/admin/reports/${type}`;
-            if (type === 'sales' && start && end) url += `?startDate=${start}&endDate=${end}`;
+            let url = `${API_BASE}/admin/reports/${activeReportType}`;
+            if (activeReportType === 'sales' && start && end) {
+                url += `?startDate=${start}&endDate=${end}`;
+            }
 
-            const res = await fetch(url);
-            fullReportData = await res.json();
+            try {
+                const res = await fetch(url);
+                fullReportData = await res.json();
 
-            renderPaginatedReport();
+                // Show report UI elements only after filter click
+                document.getElementById('printableReport').classList.remove('hidden');
+                document.getElementById('reportPaginationControls').classList.remove('hidden');
+
+                renderPaginatedReport();
+            } catch (err) {
+                showToast('Failed to fetch report data', 'error');
+            }
         }
 
         function renderPaginatedReport() {
@@ -1023,8 +1099,8 @@
                                 </div>
                             ` : `
                                 <div class="flex justify-end gap-2">
-                                    <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price || 0}, '${p.category || 'General'}', '${p.brand || 'Generic'}', '${p.supplier || 'N/A'}', '${p.location || 'Main Stock'}', '${p.expiry_date ? p.expiry_date.slice(0,10) : ''}', ${p.quantity})" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg"><i class="fa-solid fa-pen-to-square"></i></button>
-                                    <button onclick="deleteProduct(${p.id})" class="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg"><i class="fa-solid fa-trash-can"></i></button>
+                                    <button onclick="openEditModal(${p.id}, '${p.name.replace(/'/g, "\\'")}', '${p.sku}', ${p.price}, ${p.cost_price || 0}, '${p.category || 'General'}', '${p.brand || 'Generic'}', '${p.supplier || 'N/A'}', '${p.location || 'Main Stock'}', '${p.expiry_date ? p.expiry_date.slice(0,10) : ''}', ${p.quantity})" class="text-indigo-400 hover:bg-indigo-500/10 p-1.5 rounded-lg" title="Edit Product"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    <button onclick="deleteProduct(${p.id})" class="text-rose-400 hover:bg-rose-500/10 p-1.5 rounded-lg" title="Delete Product"><i class="fa-solid fa-trash-can"></i></button>
                                 </div>
                             `}
                         </td>
@@ -1165,40 +1241,22 @@
             document.getElementById('invQty').innerText = `${order.quantity} Pcs`;
             document.getElementById('invUnitPrice').innerText = `${sym}${order.unit_price}`;
             document.getElementById('invTotal').innerText = `${sym}${order.total_amount}`;
+            
             showToast('Generating Invoice PDF...', 'info');
-            await new Promise(resolve => setTimeout(resolve, 200));
-            await html2pdf().set({ margin: 0.3, filename: `Invoice_ORD_${order.sale_id}.pdf`, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(document.getElementById('invoiceTemplate')).save();
+            
+            // Allow DOM 150ms to populate template elements before capturing canvas
+            await new Promise(resolve => setTimeout(resolve, 150));
+            
+            const element = document.getElementById('invoiceTemplate');
+            await html2pdf().set({ 
+                margin: 0.3, 
+                filename: `Invoice_ORD_${order.sale_id}.pdf`, 
+                html2canvas: { scale: 2, useCORS: true, logging: false }, 
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
+            }).from(element).save();
+            
             showToast('Invoice PDF downloaded!', 'success');
         }
     </script>
-
-    <div id="invoiceContainer">
-        <div id="invoiceTemplate" class="p-8 font-sans bg-white text-slate-800">
-            <div class="flex justify-between items-center border-b pb-4 mb-6">
-                <div><h1 class="text-3xl font-bold text-indigo-600">INVOICE</h1><p class="text-sm text-slate-500">StockFlow ERP System</p></div>
-                <div class="text-right"><p id="invDate" class="text-sm text-slate-600"></p><p id="invNumber" class="font-bold font-mono text-slate-800"></p></div>
-            </div>
-            <div class="mb-6"><h3 class="text-xs uppercase font-bold text-slate-400 mb-1">Billed To:</h3><p id="invCustomerName" class="font-semibold text-lg text-slate-800"></p></div>
-            <table class="w-full text-left border-collapse mb-6">
-                <thead>
-                    <tr class="border-b-2 bg-slate-50">
-                        <th class="py-2 px-3 text-sm font-bold">Product Name</th>
-                        <th class="py-2 px-3 text-sm font-bold text-center">Qty</th>
-                        <th class="py-2 px-3 text-sm font-bold text-right">Unit Price</th>
-                        <th class="py-2 px-3 text-sm font-bold text-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="border-b">
-                        <td id="invProductName" class="py-3 px-3"></td>
-                        <td id="invQty" class="py-3 px-3 text-center"></td>
-                        <td id="invUnitPrice" class="py-3 px-3 text-right"></td>
-                        <td id="invTotal" class="py-3 px-3 text-right font-bold text-emerald-600"></td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="border-t pt-4 text-center text-xs text-slate-400"><p>Thank you for your business!</p></div>
-        </div>
-    </div>
 </body>
 </html>

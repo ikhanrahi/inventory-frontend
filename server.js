@@ -14,24 +14,24 @@ app.use(express.json());
 
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
-// 📧 FIXED NODEMAILER TRANSPORTER (Port 465 SSL for Render Cloud)
+// 📧 SECURE GMAIL SMTP TRANSPORTER (PORT 465 SSL)
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // SSL Connection
+    secure: true,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 5000,
-    socketTimeout: 10000
+    tls: {
+        rejectUnauthorized: false
+    }
 });
 
 // Helper function to send low stock alert emails
 async function checkAndSendLowStockAlert(productId) {
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        console.log("ℹ️ Email notification skipped: EMAIL_USER or EMAIL_PASS not configured.");
+        console.log("ℹ️ Email notification skipped: EMAIL_USER or EMAIL_PASS not configured in environment.");
         return;
     }
 
@@ -42,7 +42,7 @@ async function checkAndSendLowStockAlert(productId) {
         const product = res.rows[0];
         if (product.quantity <= 5) {
             const mailOptions = {
-                from: `"StockFlow ERP Alert" <${process.env.EMAIL_USER}>`,
+                from: `"StockFlow ERP" <${process.env.EMAIL_USER}>`,
                 to: process.env.EMAIL_USER,
                 subject: `⚠️ LOW STOCK ALERT: ${product.name} (${product.quantity} Pcs Left)`,
                 html: `
@@ -60,11 +60,17 @@ async function checkAndSendLowStockAlert(productId) {
                     </div>
                 `
             };
-            await transporter.sendMail(mailOptions);
-            console.log(`📧 Low stock email alert sent successfully for: ${product.name}`);
+            
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error('Email Dispatch Error:', error.message);
+                } else {
+                    console.log('📧 Low stock email alert sent successfully:', info.response);
+                }
+            });
         }
     } catch (err) {
-        console.error('Email Notification Error:', err.message);
+        console.error('Email Notification System Error:', err.message);
     }
 }
 
@@ -130,7 +136,6 @@ app.post('/api/auth/login', async (req, res) => {
         }
 
         const loginTime = new Date().toISOString();
-
         try {
             await db.query('UPDATE users SET updated_at = $1 WHERE id = $2', [loginTime, user.id]);
         } catch (e) {
