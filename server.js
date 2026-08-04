@@ -17,34 +17,66 @@ app.use(express.json());
 
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
-// 📧 NODEMAILER TRANSPORTER (PAUSED FOR NOW)
+const dns = require('dns');
+
+// 📧 FIXED NODEMAILER TRANSPORTER WITH STRICT IPv4 DNS LOOKUP FOR RENDER
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true,
+    secure: true, // SSL for Port 465
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    tls: { rejectUnauthorized: false }
+    // 👈 THIS STRICTLY FORCES IPv4 DNS LOOKUP & COMPLETELY FIXES ENETUNREACH ON RENDER
+    lookup: (hostname, options, callback) => {
+        dns.lookup(hostname, { family: 4 }, callback);
+    },
+    tls: {
+        rejectUnauthorized: false
+    },
+    connectionTimeout: 15000,
+    socketTimeout: 15000
 });
 
+// Helper function to send low stock alert emails
 async function checkAndSendLowStockAlert(productId) {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.log("ℹ️ Email Notification Skipped: EMAIL_USER or EMAIL_PASS not set on Render.");
+        return;
+    }
+
     try {
         const res = await db.query('SELECT * FROM products WHERE id = $1', [productId]);
         if (res.rows.length === 0) return;
+
         const product = res.rows[0];
         if (product.quantity <= 5) {
+            console.log(`📧 Triggering Low Stock Email to ${process.env.EMAIL_USER} for product: ${product.name}...`);
+            
             const mailOptions = {
                 from: `"StockFlow ERP" <${process.env.EMAIL_USER}>`,
                 to: process.env.EMAIL_USER,
                 subject: `⚠️ LOW STOCK ALERT: ${product.name} (${product.quantity} Pcs Left)`,
-                html: `<div style="padding: 20px; background-color: #0f172a; color: #f8fafc;"><h2>⚠️ Low Stock Alert: ${product.name} (${product.quantity} Pcs Left)</h2></div>`
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0f172a; color: #f8fafc; border-radius: 10px;">
+                        <h2 style="color: #f43f5e;">⚠️ Low Stock Inventory Alert</h2>
+                        <p>The following item in your inventory has reached a critical stock level:</p>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 15px; color: #f8fafc;">
+                            <tr style="background-color: #1e293b;"><td style="padding: 8px;"><strong>Product Name:</strong></td><td style="padding: 8px;">${product.name}</td></tr>
+                            <tr style="background-color: #0f172a;"><td style="padding: 8px;"><strong>SKU:</strong></td><td style="padding: 8px;">${product.sku}</td></tr>
+                            <tr style="background-color: #1e293b;"><td style="padding: 8px;"><strong>Remaining Stock:</strong></td><td style="padding: 8px; font-weight: bold; color: #f43f5e;">${product.quantity} Pcs</td></tr>
+                        </table>
+                    </div>
+                `
             };
-            transporter.sendMail(mailOptions, (err) => { if (err) console.log("Email Dispatch Log:", err.message); });
+
+            const info = await transporter.sendMail(mailOptions);
+            console.log(`🎉 Low Stock Email Sent Successfully! Message ID: ${info.messageId}`);
         }
-    } catch (err) { console.error('Email Dispatch Error:', err.message); }
+    } catch (err) {
+        console.error('❌ Email Dispatch Failed with Error:', err.message);
+    }
 }
 
 app.get('/', (req, res) => {
