@@ -11,6 +11,7 @@
     <style>
         .swal2-popup { background: #1e293b !important; color: #f8fafc !important; border: 1px solid rgba(51, 65, 85, 0.6) !important; border-radius: 1rem !important; }
         .swal2-title { color: #f8fafc !important; }
+        /* Ensures invoice is fully rendered in DOM but hidden from direct user view */
         #invoiceContainer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; z-index: -9999; overflow: hidden; }
         @media print {
             body * { visibility: hidden; }
@@ -111,7 +112,7 @@
 
                     <div id="adminPasscodeField" class="hidden">
                         <label class="text-xs font-semibold text-rose-400 mb-1 block">Admin Secret Passcode</label>
-                        <input type="password" id="regAdminCode" placeholder="Enter Secret Code" class="w-full bg-slate-900/80 border border-rose-500/50 px-4 py-2.5 rounded-xl text-sm text-slate-100">
+                        <input type="password" id="regAdminCode" placeholder="Enter Secret Code (ADMIN123)" class="w-full bg-slate-900/80 border border-rose-500/50 px-4 py-2.5 rounded-xl text-sm text-slate-100">
                     </div>
 
                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm shadow-lg">Create Account</button>
@@ -318,7 +319,7 @@
                         <label class="text-xs font-semibold text-slate-400 mb-1 block">End Date</label>
                         <input type="date" id="endDate" class="w-full bg-slate-900 border border-slate-700 p-2 rounded-xl text-xs text-slate-200">
                     </div>
-                    <button onclick="loadReport('sales')" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold">Filter Report Data</button>
+                    <button onclick="fetchSalesReport()" class="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-xl text-xs font-bold">Filter Report Data</button>
                 </div>
 
                 <div id="printableReport" class="overflow-x-auto mt-4 border-t border-slate-700/50 pt-4 hidden">
@@ -392,10 +393,10 @@
     </div>
 
     <div id="invoiceContainer">
-        <div id="invoiceTemplate" style="width: 700px; padding: 30px; font-family: sans-serif; background: #ffffff; color: #1e293b;">
+        <div id="invoiceTemplate" style="width: 700px; padding: 40px; font-family: sans-serif; background: #ffffff; color: #1e293b;">
             <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px;">
                 <div>
-                    <h1 style="font-size: 24px; font-weight: bold; color: #4f46e5; margin: 0;">INVOICE</h1>
+                    <h1 style="font-size: 26px; font-weight: bold; color: #4f46e5; margin: 0;">INVOICE</h1>
                     <p style="font-size: 12px; color: #64748b; margin: 2px 0 0 0;">StockFlow ERP System</p>
                 </div>
                 <div style="text-align: right;">
@@ -437,7 +438,7 @@
         let activeReportType = 'sales';
         let fullReportData = [];
         let reportCurrentPage = 1;
-        const reportRowsPerPage = 5;
+        const reportRowsPerPage = 10;
 
         let posCart = [];
         let actualAdminPasscode = '';
@@ -554,7 +555,6 @@
             if (tabName === 'pos') renderPOSProductGrid();
             if (tabName === 'users') loadUsersManagement();
             if (tabName === 'reports') {
-                // Keep report hidden initially until filter clicked
                 document.getElementById('printableReport').classList.add('hidden');
                 document.getElementById('reportPaginationControls').classList.add('hidden');
             }
@@ -965,17 +965,17 @@
             }
         }
 
-        async function loadReport(type) {
+        function loadReport(type) {
             activeReportType = type;
             reportCurrentPage = 1;
             document.querySelectorAll('.report-tab').forEach(b => b.className = 'report-tab py-2 text-[11px] font-bold rounded-lg text-slate-400 hover:text-white');
             document.getElementById(`tab-${type}`).className = 'report-tab py-2 text-[11px] font-bold rounded-lg text-white bg-indigo-600';
 
             const dateBox = document.getElementById('dateFilterBox');
-            if (type === 'sales') dateBox.classList.remove('hidden');
-            else {
+            if (type === 'sales') {
+                dateBox.classList.remove('hidden');
+            } else {
                 dateBox.classList.add('hidden');
-                // Auto load for non-sales reports
                 fetchSalesReport();
             }
         }
@@ -992,7 +992,6 @@
                 const res = await fetch(url);
                 fullReportData = await res.json();
 
-                // Show report UI elements only after filter click
                 document.getElementById('printableReport').classList.remove('hidden');
                 document.getElementById('reportPaginationControls').classList.remove('hidden');
 
@@ -1244,8 +1243,8 @@
             
             showToast('Generating Invoice PDF...', 'info');
             
-            // Allow DOM 150ms to populate template elements before capturing canvas
-            await new Promise(resolve => setTimeout(resolve, 150));
+            // Allow DOM 250ms to render properly before creating the snapshot
+            await new Promise(resolve => setTimeout(resolve, 250));
             
             const element = document.getElementById('invoiceTemplate');
             await html2pdf().set({ 
