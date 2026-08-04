@@ -258,8 +258,34 @@
             </div>
 
             <div id="customerOrdersPanel" class="bg-slate-800/80 border border-slate-700/50 p-6 rounded-2xl hidden">
-                <h2 class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-receipt text-indigo-400 mr-2"></i>My Purchases & Dues</h2>
-                <div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40"><th class="p-3">Order</th><th class="p-3">Product</th><th class="p-3">Qty</th><th class="p-3">Total Cost</th><th class="p-3">Paid</th><th class="p-3">Due Status</th><th class="p-3">Date</th><th class="p-3 text-right">Invoice</th></tr></thead><tbody id="ordersTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody></table></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-white"><i class="fa-solid fa-receipt text-indigo-400 mr-2"></i>My Purchases & Dues</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-700 text-xs uppercase text-slate-400 bg-slate-900/40">
+                                <th class="p-3">Order</th>
+                                <th class="p-3">Product</th>
+                                <th class="p-3">Qty</th>
+                                <th class="p-3">Total Cost</th>
+                                <th class="p-3">Paid</th>
+                                <th class="p-3">Due Status</th>
+                                <th class="p-3">Date</th>
+                                <th class="p-3 text-right">Invoice</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody" class="divide-y divide-slate-700/50 text-sm"></tbody>
+                    </table>
+                </div>
+
+                <div id="customerOrderPagination" class="flex justify-between items-center text-xs text-slate-400 pt-4 mt-2 border-t border-slate-700/50">
+                    <span id="custOrderPageInfo">Page 1 of 1</span>
+                    <div class="flex gap-2">
+                        <button onclick="changeCustomerOrderPage(-1)" id="btnCustOrderPrev" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-40">Previous</button>
+                        <button onclick="changeCustomerOrderPage(1)" id="btnCustOrderNext" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-40">Next</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -282,6 +308,12 @@
         const API_BASE = 'https://my-inventory-backend-qi9r.onrender.com/api';
         let allProducts = [], activeReportType = 'sales', fullReportData = [], reportCurrentPage = 1, reportRowsPerPage = 5;
         let posCart = [], actualAdminPasscode = '', isPasscodeRevealed = false;
+        
+        // Customer Orders Pagination Variables
+        let fullCustomerOrders = [];
+        let custOrderCurrentPage = 1;
+        const custOrdersPerPage = 10; // Maximum 10 records per page
+
         const CURRENCY_SYMBOLS = { 'BDT': '৳', 'USD': '$', 'EUR': '€', 'INR': '₹', 'GBP': '£' };
 
         function getCurrencySymbol(code) { return CURRENCY_SYMBOLS[code] || '$'; }
@@ -653,17 +685,64 @@
             }
         }
 
+        // Load and render Customer Orders with 10 records per page limit
         async function loadCustomerOrders(id) {
             const user = JSON.parse(localStorage.getItem('user'));
+            const res = await fetch(`${API_BASE}/sales/customer/${id}`);
+            fullCustomerOrders = await res.json();
+            custOrderCurrentPage = 1;
+            renderPaginatedCustomerOrders();
+        }
+
+        function renderPaginatedCustomerOrders() {
+            const user = JSON.parse(localStorage.getItem('user'));
             const sym = getCurrencySymbol(user.currency);
-            const orders = await (await fetch(`${API_BASE}/sales/customer/${id}`)).json();
-            const tb = document.getElementById('ordersTableBody'); tb.innerHTML = '';
-            orders.forEach(o => {
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
+
+            if (!fullCustomerOrders || fullCustomerOrders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">No purchase records found.</td></tr>`;
+                document.getElementById('custOrderPageInfo').innerText = `Page 0 of 0`;
+                document.getElementById('btnCustOrderPrev').disabled = true;
+                document.getElementById('btnCustOrderNext').disabled = true;
+                return;
+            }
+
+            const totalPages = Math.ceil(fullCustomerOrders.length / custOrdersPerPage);
+            const startIdx = (custOrderCurrentPage - 1) * custOrdersPerPage;
+            const pageData = fullCustomerOrders.slice(startIdx, startIdx + custOrdersPerPage);
+
+            pageData.forEach(o => {
                 const paidAmt = parseFloat(o.paid_amount || o.total_amount);
                 const dueAmt = parseFloat(o.due_amount || 0);
-                const statusBadge = dueAmt > 0 ? `<span class="text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full text-xs">Due: ${sym}${dueAmt.toFixed(2)}</span>` : `<span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full text-xs">PAID</span>`;
-                tb.innerHTML += `<tr class="hover:bg-slate-700/35"><td class="p-3 font-mono text-indigo-400">#ORD-${o.sale_id}</td><td class="p-3 font-semibold">${o.product_name}</td><td class="p-3">${o.quantity}</td><td class="p-3 font-bold text-white">${sym}${parseFloat(o.total_amount).toFixed(2)}</td><td class="p-3 text-emerald-400">${sym}${paidAmt.toFixed(2)}</td><td class="p-3">${statusBadge}</td><td class="p-3 text-xs text-slate-400">${formatDateTime(o.created_at)}</td><td class="p-3 text-right"><button onclick='downloadPDF(${JSON.stringify(o)})' class="bg-slate-700 px-2.5 py-1 rounded text-xs">Invoice</button></td></tr>`;
+                const statusBadge = dueAmt > 0 
+                    ? `<span class="text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full text-xs">Due: ${sym}${dueAmt.toFixed(2)}</span>` 
+                    : `<span class="text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full text-xs">PAID</span>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-700/35">
+                        <td class="p-3 font-mono text-indigo-400 font-bold">#ORD-${o.sale_id}</td>
+                        <td class="p-3 font-semibold text-slate-100">${o.product_name}</td>
+                        <td class="p-3 text-slate-300">${o.quantity} Pcs</td>
+                        <td class="p-3 font-bold text-white">${sym}${parseFloat(o.total_amount).toFixed(2)}</td>
+                        <td class="p-3 text-emerald-400 font-bold">${sym}${paidAmt.toFixed(2)}</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3 text-xs text-slate-400">${formatDateTime(o.created_at)}</td>
+                        <td class="p-3 text-right">
+                            <button onclick='downloadPDF(${JSON.stringify(o)})' class="bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1 rounded-lg text-xs font-semibold">Invoice</button>
+                        </td>
+                    </tr>
+                `;
             });
+
+            document.getElementById('custOrderPageInfo').innerText = `Page ${custOrderCurrentPage} of ${totalPages} (${fullCustomerOrders.length} Records)`;
+            document.getElementById('btnCustOrderPrev').disabled = custOrderCurrentPage === 1;
+            document.getElementById('btnCustOrderNext').disabled = custOrderCurrentPage === totalPages;
+        }
+
+        function changeCustomerOrderPage(dir) {
+            custOrderCurrentPage += dir;
+            renderPaginatedCustomerOrders();
         }
 
         async function handleAddProduct(e) {
