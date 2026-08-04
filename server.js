@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+const dns = require('dns');
 const db = require('./db');
 
 const app = express();
@@ -12,20 +13,24 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
+dns.setDefaultResultOrder('ipv4first');
+
 let currentAdminPasscode = process.env.ADMIN_SECRET || 'ADMIN123';
 
 // 📧 FIXED NODEMAILER TRANSPORTER FOR RENDER CLOUD (Port 465 SSL)
 // 📧 IPv4 FORCED SMTP CONFIGURATION FOR RENDER
+// 📧 GUARANTEED IPv4 NODEMAILER TRANSPORTER FOR RENDER
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // TLS
-    requireTLS: true,
+    port: 465,
+    secure: true, // SSL
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    family: 4, // 👈 FORCE IPv4 (Fixes ENETUNREACH Network Error on Render)
+    tls: {
+        rejectUnauthorized: false
+    },
     connectionTimeout: 15000,
     socketTimeout: 15000
 });
